@@ -4,6 +4,7 @@ import android.util.Log
 import com.starwars.exercise.core.Resource
 import com.starwars.exercise.data.api.StarWarsApi
 import com.starwars.exercise.data.api.StarWarsImageApi
+import com.starwars.exercise.data.api.dto.SpeciesDto
 import com.starwars.exercise.data.cache.PersonDao
 import com.starwars.exercise.data.cache.PlanetDao
 import com.starwars.exercise.data.cache.StarshipDao
@@ -13,6 +14,7 @@ import com.starwars.exercise.data.mapper.toPersonImage
 import com.starwars.exercise.domain.model.Person
 import com.starwars.exercise.domain.model.PersonImage
 import com.starwars.exercise.domain.model.Planet
+import com.starwars.exercise.domain.model.Species
 import com.starwars.exercise.domain.model.Starship
 import com.starwars.exercise.domain.repository.StarWarsRepository
 import kotlinx.coroutines.flow.Flow
@@ -134,4 +136,22 @@ class StarWarsRepositoryImpl @Inject constructor(
                 Resource.Error(error.localizedMessage ?: "Unable to load planet details")
             }
         }
+
+
+    override suspend fun getAllSpecies(): Resource<List<Species>> {
+        return try {
+            // swapi paginates species, fetch all pages
+            val allSpecies = mutableListOf<SpeciesDto>()
+            var page = 1
+            while (true) {
+                val response = api.getSpeciesPage(page)
+                allSpecies.addAll(response.results)
+                if (response.next == null) break  // add `next: String?` to SpeciesResponseDto
+                page++
+            }
+            Resource.Success(allSpecies.map { it.toDomain() })
+        } catch (e: Exception) {
+            Resource.Error(e.localizedMessage ?: "Failed to load species")
+        }
+    }
 }

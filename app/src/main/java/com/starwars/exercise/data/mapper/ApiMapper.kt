@@ -3,6 +3,7 @@ package com.starwars.exercise.data.mapper
 import com.starwars.exercise.data.api.dto.PersonDto
 import com.starwars.exercise.data.api.dto.PersonImageDto
 import com.starwars.exercise.data.api.dto.PlanetDto
+import com.starwars.exercise.data.api.dto.SpeciesDto
 import com.starwars.exercise.data.api.dto.StarshipDto
 import com.starwars.exercise.data.cache.PersonEntity
 import com.starwars.exercise.data.cache.PlanetEntity
@@ -10,6 +11,7 @@ import com.starwars.exercise.data.cache.StarshipEntity
 import com.starwars.exercise.domain.model.Person
 import com.starwars.exercise.domain.model.PersonImage
 import com.starwars.exercise.domain.model.Planet
+import com.starwars.exercise.domain.model.Species
 import com.starwars.exercise.domain.model.Starship
 
 internal fun String.extractId(): Int {
@@ -162,3 +164,10 @@ internal fun PlanetEntity.toDomain(): Planet {
         rotationPeriod = rotationPeriod
     )
 }
+
+internal fun SpeciesDto.toDomain(): Species = Species(
+    name = name,
+    peopleIds = people.mapNotNull { url ->
+        url.trimEnd('/').split("/").lastOrNull()?.toIntOrNull()
+    }
+)

@@ -5,5 +5,9 @@ import com.starwars.exercise.domain.model.Person
 import kotlinx.coroutines.flow.Flow
 
 interface PagingRepository {
-    fun getPagingCharacters(): Flow<PagingData<Person>>
+    fun getPagingCharacters(
+        searchQuery: String? = null,
+        filteredIds: List<Int>? = null,
+        selectedGenders: Set<String>? = null
+    ): Flow<PagingData<Person>>
 }

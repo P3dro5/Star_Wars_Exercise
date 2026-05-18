@@ -3,6 +3,7 @@ package com.starwars.exercise.data.api
 import com.starwars.exercise.data.api.dto.PeopleResponseDto
 import com.starwars.exercise.data.api.dto.PersonDto
 import com.starwars.exercise.data.api.dto.PlanetDto
+import com.starwars.exercise.data.api.dto.SpeciesResponseDto
 import com.starwars.exercise.data.api.dto.StarshipDto
 import com.starwars.exercise.data.api.dto.StarshipResponseDto
 import retrofit2.http.GET
@@ -30,4 +31,12 @@ interface StarWarsApi {
 
     @GET("planets/{id}/")
     suspend fun getPlanet(@Path("id") id: Int): PlanetDto
+
+    @GET("species/")
+    suspend fun getSpecies(): SpeciesResponseDto
+
+    @GET("species/")
+    suspend fun getSpeciesPage(
+        @Query("page") page: Int
+    ): SpeciesResponseDto
 }

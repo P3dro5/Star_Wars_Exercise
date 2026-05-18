@@ -4,6 +4,7 @@ import com.starwars.exercise.core.Resource
 import com.starwars.exercise.domain.model.Person
 import com.starwars.exercise.domain.model.PersonImage
 import com.starwars.exercise.domain.model.Planet
+import com.starwars.exercise.domain.model.Species
 import com.starwars.exercise.domain.model.Starship
 import kotlinx.coroutines.flow.Flow
 
@@ -14,4 +15,5 @@ interface StarWarsRepository {
     fun getShips(searchQuery: String? = null): Flow<Resource<List<Starship>>>
     suspend fun getShipDetail(starshipId: Int): Resource<Starship>
     suspend fun getPlanetDetail(planetId: Int): Resource<Planet>
+    suspend fun getAllSpecies(): Resource<List<Species>>
 }
