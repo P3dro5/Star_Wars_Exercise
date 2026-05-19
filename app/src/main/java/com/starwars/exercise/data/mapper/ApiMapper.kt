@@ -8,6 +8,7 @@ import com.starwars.exercise.data.api.dto.StarshipDto
 import com.starwars.exercise.data.cache.PersonEntity
 import com.starwars.exercise.data.cache.PlanetEntity
 import com.starwars.exercise.data.cache.StarshipEntity
+import com.starwars.exercise.domain.model.FilmDto
 import com.starwars.exercise.domain.model.Person
 import com.starwars.exercise.domain.model.PersonImage
 import com.starwars.exercise.domain.model.Planet
@@ -171,3 +172,11 @@ internal fun SpeciesDto.toDomain(): Species = Species(
         url.trimEnd('/').split("/").lastOrNull()?.toIntOrNull()
     }
 )
+
+fun FilmDto.toCharacterAppearances(): List<Pair<Int, Int>> {
+    val year = releaseDate.split("-").first().toIntOrNull() ?: Int.MAX_VALUE
+    return characters.mapNotNull { url ->
+        val id = url.trimEnd('/').split("/").lastOrNull()?.toIntOrNull()
+        id?.let { Pair(it, year) }
+    }
+}

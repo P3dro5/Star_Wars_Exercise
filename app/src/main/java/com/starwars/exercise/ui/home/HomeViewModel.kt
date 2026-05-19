@@ -1,12 +1,16 @@
 package com.starwars.exercise.ui.home
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.paging.cachedIn
 import androidx.paging.map
 import com.starwars.exercise.core.Resource
 import com.starwars.exercise.domain.model.CharacterFilter
+import com.starwars.exercise.domain.model.SortField
+import com.starwars.exercise.domain.model.SortOrder
 import com.starwars.exercise.domain.model.Species
+import com.starwars.exercise.domain.usecase.GetCharacterFirstAppearanceUseCase
 import com.starwars.exercise.domain.usecase.GetCharacterPagingUseCase
 import com.starwars.exercise.domain.usecase.GetCharactersImageUseCase
 import com.starwars.exercise.domain.usecase.GetSpeciesUseCase
@@ -26,7 +30,8 @@ import kotlinx.coroutines.launch
 class HomeViewModel @Inject constructor(
     private val getCharactersImageUseCase: GetCharactersImageUseCase,
     private val getCharacterPagingUseCase: GetCharacterPagingUseCase,
-    private val getSpeciesUseCase: GetSpeciesUseCase
+    private val getSpeciesUseCase: GetSpeciesUseCase,
+    private val getCharacterFirstAppearanceUseCase: GetCharacterFirstAppearanceUseCase
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow<HomeUiState>(HomeUiState.Loading)
@@ -41,77 +46,48 @@ class HomeViewModel @Inject constructor(
     private val _filter = MutableStateFlow(CharacterFilter())
     val filter: StateFlow<CharacterFilter> = _filter
 
+    private val _firstAppearanceMap = MutableStateFlow<Map<Int, Int>>(emptyMap())
+
     init {
-        loadCharacters()
-        loadSpecies()
-    }
-
-    fun onSearchQueryChanged(query: String) {
-        _searchQuery.value = query
-        loadCharacters()
-    }
-
-    fun onSpeciesToggled(species: Species) {
-        _filter.update { current ->
-            val updated = if (species in current.selectedSpecies) {
-                current.selectedSpecies - species
-            } else {
-                current.selectedSpecies + species
-            }
-            current.copy(selectedSpecies = updated)
+        viewModelScope.launch {
+            loadFilmData()   // wait for films first
+            loadCharacters() // then load characters with populated map
         }
+        loadSpecies()        // species can load independently
     }
 
-    fun onGenderToggled(gender: String) {
-        _filter.update { current ->
-            val updated = if (gender in current.selectedGenders) {
-                current.selectedGenders - gender
-            } else {
-                current.selectedGenders + gender
-            }
-            current.copy(selectedGenders = updated)
-        }
-    }
-
-    fun applyFilters() {
-        loadCharacters()
-    }
-
-    fun clearFilters(selectedSpecies: Species? = null, selectedGender: String = "") {
-        if(selectedSpecies == null && selectedGender.isEmpty()) {
-            _filter.value = CharacterFilter()
-            loadCharacters()
-        }
-        else {
-            _filter.value = _filter.value.copy(
-                selectedSpecies = _filter.value.selectedSpecies.filter { it != selectedSpecies }.toSet(),
-                selectedGenders = _filter.value.selectedGenders.filter { it != selectedGender }.toSet()
-            )
-            loadCharacters()
+    private suspend fun loadFilmData() {
+        when (val result = getCharacterFirstAppearanceUseCase()) {
+            is Resource.Success -> _firstAppearanceMap.value = result.data
+            is Resource.Error -> Log.e("HomeViewModel", "Failed to load films: ${result.message}")
+            else -> {}
         }
     }
 
     fun loadCharacters() {
         val currentFilter = _filter.value
         val searchQuery = _searchQuery.value.ifBlank { null }
-
-        // merge all people IDs from selected species
-        val filteredIds = if (currentFilter.selectedSpecies.isNotEmpty()) {
-            currentFilter.selectedSpecies.flatMap { it.peopleIds }.distinct()
-        } else null
-
+        val filteredIds = currentFilter.selectedSpecies
+            .flatMap { it.peopleIds }.distinct().ifEmpty { null }
         val selectedGenders = currentFilter.selectedGenders.ifEmpty { null }
 
         getCharactersImageUseCase().combineTransform(
-            getCharacterPagingUseCase(searchQuery, filteredIds, selectedGenders)
-                .cachedIn(viewModelScope)
+            getCharacterPagingUseCase(
+                searchQuery = searchQuery,
+                filteredIds = filteredIds,
+                selectedGenders = selectedGenders,
+                sortField = currentFilter.sortField,
+                sortOrder = currentFilter.sortOrder,
+                firstAppearanceMap = _firstAppearanceMap.value  // always up to date
+            ).cachedIn(viewModelScope)
         ) { images, characters ->
             when (images) {
                 is Resource.Loading -> _uiState.value = HomeUiState.Loading
                 is Resource.Success -> {
                     val imageMap = images.data.associateBy { it.id }
                     val pagingValue = characters.map { post ->
-                        post.copy(image = imageMap.getValue(post.id.toString()).image)
+                        // getValue crashes if id missing, getOrDefault returns empty string
+                        post.copy(image = imageMap.getOrDefault(post.id.toString(), null)?.image ?: "")
                     }
                     _uiState.value = HomeUiState.Success(flowOf(pagingValue))
                 }
@@ -121,6 +97,49 @@ class HomeViewModel @Inject constructor(
             .onStart { _uiState.value = HomeUiState.Loading }
             .catch { _uiState.value = HomeUiState.Error(it.localizedMessage ?: "Unknown error") }
             .launchIn(viewModelScope)
+    }
+
+    fun onSearchQueryChanged(query: String) {
+        _searchQuery.value = query
+        loadCharacters()
+    }
+
+    fun onSpeciesToggled(species: Species) {
+        _filter.update { current ->
+            val updated = if (species in current.selectedSpecies)
+                current.selectedSpecies - species
+            else current.selectedSpecies + species
+            current.copy(selectedSpecies = updated)
+        }
+    }
+
+    fun onGenderToggled(gender: String) {
+        _filter.update { current ->
+            val updated = if (gender in current.selectedGenders)
+                current.selectedGenders - gender
+            else current.selectedGenders + gender
+            current.copy(selectedGenders = updated)
+        }
+    }
+
+    fun onSortChanged(field: SortField, order: SortOrder) {
+        if (field == SortField.YEAR && _firstAppearanceMap.value.isEmpty()) {
+            viewModelScope.launch {
+                loadFilmData()
+                _filter.update { it.copy(sortField = field, sortOrder = order) }
+                loadCharacters()
+            }
+            return
+        }
+        _filter.update { it.copy(sortField = field, sortOrder = order) }
+        loadCharacters()
+    }
+
+    fun applyFilters() = loadCharacters()
+
+    fun clearFilters() {
+        _filter.value = CharacterFilter()
+        loadCharacters()
     }
 
     private fun loadSpecies() {

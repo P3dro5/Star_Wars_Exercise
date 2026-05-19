@@ -17,6 +17,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material3.Badge
 import androidx.compose.material3.BadgedBox
 import androidx.compose.material3.Button
@@ -52,6 +54,8 @@ import androidx.paging.LoadState
 import androidx.paging.compose.collectAsLazyPagingItems
 import androidx.paging.compose.itemKey
 import com.starwars.exercise.domain.model.CharacterFilter
+import com.starwars.exercise.domain.model.SortField
+import com.starwars.exercise.domain.model.SortOrder
 import com.starwars.exercise.domain.model.Species
 import com.starwars.exercise.domain.model.availableGenders
 
@@ -72,9 +76,11 @@ fun HomeScreen(
     if (showFilterSheet) {
         FilterBottomSheet(
             speciesUiState = speciesUiState,
+            availableGenders = availableGenders,
             currentFilter = filter,
             onSpeciesToggled = { viewModel.onSpeciesToggled(it) },
             onGenderToggled = { viewModel.onGenderToggled(it) },
+            onSortChanged = { field, order -> viewModel.onSortChanged(field, order) },
             onApply = {
                 viewModel.applyFilters()
                 showFilterSheet = false
@@ -119,61 +125,48 @@ fun HomeScreen(
                 .fillMaxSize()
                 .padding(paddingValues)
         ) {
-            // Filter row
+            // Sort row
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 16.dp, vertical = 4.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    if (filter.selectedSpecies.isNotEmpty()) {
-                        filter.selectedSpecies.forEach { species ->
-                            FilterChip(
-                                selected = true,
-                                onClick = {
-                                    viewModel.onSpeciesToggled(species)
-                                    viewModel.clearFilters(selectedSpecies = species)
-                                          },
-                                label = { Text(species.name) },
-                                trailingIcon = {
-                                    Icon(Icons.Default.Close, contentDescription = "Remove")
-                                }
-                            )
-                        }
+                SortChip(
+                    label = "Name",
+                    isSelected = filter.sortField == SortField.NAME,
+                    sortOrder = filter.sortOrder,
+                    onClick = {
+                        val newOrder = if (filter.sortField == SortField.NAME) {
+                            if (filter.sortOrder == SortOrder.ASCENDING) SortOrder.DESCENDING
+                            else SortOrder.ASCENDING
+                        } else SortOrder.ASCENDING
+                        viewModel.onSortChanged(SortField.NAME, newOrder)
+                        viewModel.applyFilters()
                     }
-                    if (filter.selectedGenders.isNotEmpty()) {
-                        filter.selectedGenders.forEach { gender ->
-                            FilterChip(
-                                selected = true,
-                                onClick = {
-                                    viewModel.onGenderToggled(gender)
-                                    viewModel.clearFilters(selectedGender = gender)
-                                },
-                                label = { Text(gender.replaceFirstChar { it.uppercase() }) },
-                                trailingIcon = {
-                                    Icon(Icons.Default.Close, contentDescription = "Remove")
-                                }
-                            )
-                        }
+                )
+                SortChip(
+                    label = "Year",
+                    isSelected = filter.sortField == SortField.YEAR,
+                    sortOrder = filter.sortOrder,
+                    onClick = {
+                        val newOrder = if (filter.sortField == SortField.YEAR) {
+                            if (filter.sortOrder == SortOrder.ASCENDING) SortOrder.DESCENDING
+                            else SortOrder.ASCENDING
+                        } else SortOrder.ASCENDING
+                        viewModel.onSortChanged(SortField.YEAR, newOrder)
+                        viewModel.applyFilters()
                     }
-                    if (!filter.isActive) {
-                        Text(
-                            text = "No filters applied",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
+                )
+                Spacer(modifier = Modifier.weight(1f))
+                BadgedBox(
+                    badge = {
+                        val count = filter.selectedSpecies.size + filter.selectedGenders.size
+                        if (count > 0) Badge { Text("$count") }
                     }
-                }
-                IconButton(onClick = { showFilterSheet = true }) {
-                    BadgedBox(
-                        badge = {
-                            if (filter.isActive) Badge {
-                                Text("${filter.selectedSpecies.size + filter.selectedGenders.size}")
-                            }
-                        }
-                    ) {
+                ) {
+                    IconButton(onClick = { showFilterSheet = true }) {
                         Icon(Icons.AutoMirrored.Default.List, contentDescription = "Filters")
                     }
                 }
@@ -183,9 +176,13 @@ fun HomeScreen(
             when (uiState) {
                 HomeUiState.Loading -> LoadingState(modifier = Modifier.fillMaxSize())
                 is HomeUiState.Success -> {
-                    val characters = (uiState as HomeUiState.Success).characters.collectAsLazyPagingItems()
+                    val characters = (uiState as HomeUiState.Success)
+                        .characters.collectAsLazyPagingItems()
                     LazyColumn(modifier = Modifier.fillMaxSize()) {
-                        items(count = characters.itemCount, key = characters.itemKey { it.id }) { index ->
+                        items(
+                            count = characters.itemCount,
+                            key = characters.itemKey { it.id }
+                        ) { index ->
                             val person = characters[index]
                             PersonListItem(
                                 id = person?.id ?: 0,
@@ -197,9 +194,10 @@ fun HomeScreen(
                         }
                         when (characters.loadState.append) {
                             is LoadState.Loading -> item {
-                                Box(Modifier.fillMaxWidth().padding(16.dp), Alignment.Center) {
-                                    CircularProgressIndicator()
-                                }
+                                Box(
+                                    Modifier.fillMaxWidth().padding(16.dp),
+                                    Alignment.Center
+                                ) { CircularProgressIndicator() }
                             }
                             is LoadState.NotLoading -> {
                                 if (characters.loadState.append.endOfPaginationReached) {
@@ -235,13 +233,40 @@ fun HomeScreen(
     }
 }
 
+@Composable
+fun SortChip(
+    label: String,
+    isSelected: Boolean,
+    sortOrder: SortOrder,
+    onClick: () -> Unit
+) {
+    FilterChip(
+        selected = isSelected,
+        onClick = onClick,
+        label = { Text(label) },
+        trailingIcon = {
+            if (isSelected) {
+                Icon(
+                    imageVector = if (sortOrder == SortOrder.ASCENDING)
+                        Icons.Default.KeyboardArrowUp
+                    else
+                        Icons.Default.KeyboardArrowDown,
+                    contentDescription = sortOrder.name
+                )
+            }
+        }
+    )
+}
+
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
 fun FilterBottomSheet(
     speciesUiState: SpeciesUiState,
+    availableGenders: List<String>,
     currentFilter: CharacterFilter,
     onSpeciesToggled: (Species) -> Unit,
     onGenderToggled: (String) -> Unit,
+    onSortChanged: (SortField, SortOrder) -> Unit,
     onApply: () -> Unit,
     onClear: () -> Unit,
     onDismiss: () -> Unit
@@ -264,7 +289,6 @@ fun FilterBottomSheet(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Gender section
             Text("Gender", style = MaterialTheme.typography.titleSmall)
             Spacer(modifier = Modifier.height(8.dp))
             FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -279,7 +303,6 @@ fun FilterBottomSheet(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Species section
             Text("Species", style = MaterialTheme.typography.titleSmall)
             Spacer(modifier = Modifier.height(8.dp))
             when (speciesUiState) {
@@ -300,18 +323,14 @@ fun FilterBottomSheet(
                     }
                 }
                 is SpeciesUiState.Error -> {
-                    Text(
-                        text = speciesUiState.message,
-                        color = MaterialTheme.colorScheme.error
-                    )
+                    Text(speciesUiState.message, color = MaterialTheme.colorScheme.error)
                 }
                 else -> {}
             }
 
-            Button(
-                onClick = onApply,
-                modifier = Modifier.fillMaxWidth()
-            ) {
+            Spacer(modifier = Modifier.height(24.dp))
+
+            Button(onClick = onApply, modifier = Modifier.fillMaxWidth()) {
                 Text("Apply filters")
             }
 

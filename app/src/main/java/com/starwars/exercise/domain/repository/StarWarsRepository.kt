@@ -16,4 +16,5 @@ interface StarWarsRepository {
     suspend fun getShipDetail(starshipId: Int): Resource<Starship>
     suspend fun getPlanetDetail(planetId: Int): Resource<Planet>
     suspend fun getAllSpecies(): Resource<List<Species>>
+    suspend fun getCharacterFirstAppearanceYears(): Resource<Map<Int, Int>>
 }

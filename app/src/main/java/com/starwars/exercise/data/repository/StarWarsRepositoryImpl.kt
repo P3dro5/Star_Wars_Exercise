@@ -8,6 +8,7 @@ import com.starwars.exercise.data.api.dto.SpeciesDto
 import com.starwars.exercise.data.cache.PersonDao
 import com.starwars.exercise.data.cache.PlanetDao
 import com.starwars.exercise.data.cache.StarshipDao
+import com.starwars.exercise.data.mapper.toCharacterAppearances
 import com.starwars.exercise.data.mapper.toDomain
 import com.starwars.exercise.data.mapper.toEntity
 import com.starwars.exercise.data.mapper.toPersonImage
@@ -152,6 +153,26 @@ class StarWarsRepositoryImpl @Inject constructor(
             Resource.Success(allSpecies.map { it.toDomain() })
         } catch (e: Exception) {
             Resource.Error(e.localizedMessage ?: "Failed to load species")
+        }
+    }
+
+    override suspend fun getCharacterFirstAppearanceYears(): Resource<Map<Int, Int>> {
+        return try {
+            val films = api.getFilms().results
+
+            // build map of characterId -> earliest year across all films
+            val appearanceMap = mutableMapOf<Int, Int>()
+            films.forEach { film ->
+                film.toCharacterAppearances().forEach { (characterId, year) ->
+                    appearanceMap[characterId] = minOf(
+                        appearanceMap.getOrDefault(characterId, Int.MAX_VALUE),
+                        year
+                    )
+                }
+            }
+            Resource.Success(appearanceMap)
+        } catch (e: Exception) {
+            Resource.Error(e.localizedMessage ?: "Failed to load films")
         }
     }
 }
