@@ -3,6 +3,7 @@ package com.starwars.exercise.data.api
 import com.starwars.exercise.data.api.dto.PeopleResponseDto
 import com.starwars.exercise.data.api.dto.PersonDto
 import com.starwars.exercise.data.api.dto.PlanetDto
+import com.starwars.exercise.data.api.dto.PlanetsResponseDto
 import com.starwars.exercise.data.api.dto.SpeciesResponseDto
 import com.starwars.exercise.data.api.dto.StarshipDto
 import com.starwars.exercise.data.api.dto.StarshipResponseDto
@@ -43,4 +44,9 @@ interface StarWarsApi {
 
     @GET("films/")
     suspend fun getFilms(): FilmsResponseDto
+
+    @GET("planets/")
+    suspend fun getPlanets(
+        @Query("page") page: Int = 1
+    ): PlanetsResponseDto
 }

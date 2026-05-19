@@ -50,6 +50,13 @@ fun StarWarsNavHost() {
                 }
             )
         }
+        composable(Screen.GalaxyMap.route) {
+            HomeScreen(
+                onMenu = { navController.navigate(Screen.Menu.route) },
+                onCharacterSelected = { navController.navigate(Screen.Detail.createRoute(it)) },
+                onCompare = { navController.navigate(Screen.Compare.route) }
+            )
+        }
         composable(Screen.Compare.route) {
             CompareScreen(
                 onBack = { navController.popBackStack() },

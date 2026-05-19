@@ -3,11 +3,10 @@ package com.starwars.exercise.domain.usecase
 import com.starwars.exercise.core.Resource
 import com.starwars.exercise.domain.model.Planet
 import com.starwars.exercise.domain.repository.StarWarsRepository
+import javax.inject.Inject
 
-class GetPlanetDetailUseCase(
+class GetAllPlanetsUseCase @Inject constructor(
     private val repository: StarWarsRepository
 ) {
-    suspend operator fun invoke(planetId: Int): Resource<Planet> {
-        return repository.getPlanet(planetId)
-    }
+    suspend operator fun invoke(): Resource<List<Planet>> = repository.getAllPlanets()
 }

@@ -80,6 +80,7 @@ dependencies {
     implementation(libs.okhttp.logging)
     implementation(libs.coil.compose)
     implementation(libs.coroutines.android)
+    implementation(libs.subsampling.scale.image.view.androidx)
 
     testImplementation(libs.junit)
     testImplementation(libs.junit.jupiter.api)

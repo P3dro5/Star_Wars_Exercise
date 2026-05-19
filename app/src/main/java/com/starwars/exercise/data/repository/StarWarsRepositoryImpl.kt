@@ -4,6 +4,7 @@ import android.util.Log
 import com.starwars.exercise.core.Resource
 import com.starwars.exercise.data.api.StarWarsApi
 import com.starwars.exercise.data.api.StarWarsImageApi
+import com.starwars.exercise.data.api.dto.PlanetDto
 import com.starwars.exercise.data.api.dto.SpeciesDto
 import com.starwars.exercise.data.cache.PersonDao
 import com.starwars.exercise.data.cache.PlanetDao
@@ -123,20 +124,30 @@ class StarWarsRepositoryImpl @Inject constructor(
             }
         }
 
-        override suspend fun getPlanetDetail(planetId: Int): Resource<Planet> {
-            return try {
-                val cached = planetDao.getPlanet(planetId)
-                if (cached != null) {
-                    return Resource.Success(cached.toDomain())
-                }
-                val response = api.getPlanet(planetId)
-                val entity = response.toEntity()
-                planetDao.insertPlanets(listOf(entity))
-                Resource.Success(response.toDomain())
-            } catch (error: Exception) {
-                Resource.Error(error.localizedMessage ?: "Unable to load planet details")
+    override suspend fun getAllPlanets(): Resource<List<Planet>> {
+        return try {
+            val allPlanets = mutableListOf<PlanetDto>()
+            var page = 1
+            while (true) {
+                val response = api.getPlanets(page)
+                allPlanets.addAll(response.results)
+                if (response.next == null) break
+                page++
             }
+            Resource.Success(allPlanets.map { it.toDomain() })
+        } catch (e: Exception) {
+            Resource.Error(e.localizedMessage ?: "Failed to load planets")
         }
+    }
+
+
+    override suspend fun getPlanet(id: Int): Resource<Planet> {
+        return try {
+            Resource.Success(api.getPlanet(id).toDomain())
+        } catch (e: Exception) {
+            Resource.Error(e.localizedMessage ?: "Failed to load planet")
+        }
+    }
 
 
     override suspend fun getAllSpecies(): Resource<List<Species>> {

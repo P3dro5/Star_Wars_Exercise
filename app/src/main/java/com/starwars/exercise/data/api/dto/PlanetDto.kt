@@ -11,5 +11,6 @@ data class PlanetDto(
     val diameter: String,
     @field:Json(name = "orbital_period") val orbitalPeriod: String,
     @field:Json(name = "rotation_period") val rotationPeriod: String,
-    val url: String
+    val url: String,
+    val residents: List<String> = emptyList()  // URLs of residents
 )

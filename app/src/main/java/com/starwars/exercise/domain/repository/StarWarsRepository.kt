@@ -14,7 +14,8 @@ interface StarWarsRepository {
     fun getAllCharacterImages(): Flow<Resource<List<PersonImage>>>
     fun getShips(searchQuery: String? = null): Flow<Resource<List<Starship>>>
     suspend fun getShipDetail(starshipId: Int): Resource<Starship>
-    suspend fun getPlanetDetail(planetId: Int): Resource<Planet>
+    suspend fun getPlanet(planetId: Int): Resource<Planet>
+    suspend fun getAllPlanets(): Resource<List<Planet>>
     suspend fun getAllSpecies(): Resource<List<Species>>
     suspend fun getCharacterFirstAppearanceYears(): Resource<Map<Int, Int>>
 }

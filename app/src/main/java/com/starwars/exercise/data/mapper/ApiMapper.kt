@@ -1,5 +1,6 @@
 package com.starwars.exercise.data.mapper
 
+import com.starwars.exercise.config.GalaxyPositions
 import com.starwars.exercise.data.api.dto.PersonDto
 import com.starwars.exercise.data.api.dto.PersonImageDto
 import com.starwars.exercise.data.api.dto.PlanetDto
@@ -124,20 +125,6 @@ internal fun StarshipEntity.toDomain(): Starship {
     )
 }
 
-internal fun PlanetDto.toDomain(): Planet {
-    return Planet(
-        id = url.extractId(),
-        name = name,
-        climate = climate,
-        terrain = terrain,
-        population = population,
-        gravity = gravity,
-        diameter = diameter,
-        orbitalPeriod = orbitalPeriod,
-        rotationPeriod = rotationPeriod
-    )
-}
-
 internal fun PlanetDto.toEntity(): PlanetEntity {
     return PlanetEntity(
         id = url.extractId(),
@@ -179,4 +166,23 @@ fun FilmDto.toCharacterAppearances(): List<Pair<Int, Int>> {
         val id = url.trimEnd('/').split("/").lastOrNull()?.toIntOrNull()
         id?.let { Pair(it, year) }
     }
+}
+
+fun PlanetDto.toDomain(): Planet {
+    val id = url.trimEnd('/').split("/").lastOrNull()?.toIntOrNull() ?: 0
+    return Planet(
+        id = id,
+        name = name,
+        climate = climate,
+        terrain = terrain,
+        population = population,
+        gravity = gravity,
+        diameter = diameter,
+        orbitalPeriod = orbitalPeriod,
+        rotationPeriod = rotationPeriod,
+        residentIds = residents.mapNotNull { residentUrl ->
+            residentUrl.trimEnd('/').split("/").lastOrNull()?.toIntOrNull()
+        },
+        galaxyPosition = GalaxyPositions.getPosition(name)
+    )
 }
