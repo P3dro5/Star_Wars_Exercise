@@ -33,7 +33,6 @@ object GalaxyPositions {
         "Dantooine" to GalaxyPosition(0.38f, 0.65f),
         "Bestine IV" to GalaxyPosition(0.72f, 0.72f),
         "Ord Mantell" to GalaxyPosition(0.35f, 0.55f),
-        "unknown" to GalaxyPosition(0.50f, 0.50f),
         "Trandosha" to GalaxyPosition(0.42f, 0.62f),
         "Socorro" to GalaxyPosition(0.68f, 0.82f),
         "Mon Cala" to GalaxyPosition(0.32f, 0.60f),
@@ -49,7 +48,7 @@ object GalaxyPositions {
         "Tund" to GalaxyPosition(0.70f, 0.55f),
         "Haruun Kal" to GalaxyPosition(0.38f, 0.50f),
         "Cerea" to GalaxyPosition(0.52f, 0.55f),
-        "Glee Anselm" to GalaxyPosition(0.45f, 0.65f),
+        "Glee Anselm" to GalaxyPosition(0.45f, 0.67f),
         "Iridonia" to GalaxyPosition(0.60f, 0.45f),
         "Tholoth" to GalaxyPosition(0.55f, 0.40f),
         "Iktotch" to GalaxyPosition(0.48f, 0.58f),
@@ -69,6 +68,6 @@ object GalaxyPositions {
     )
 
     fun getPosition(planetName: String): GalaxyPosition {
-        return planetPositions[planetName] ?: GalaxyPosition(0.5f, 0.5f)
+        return planetPositions[planetName] ?: GalaxyPosition(-1000f, -1000f)
     }
 }

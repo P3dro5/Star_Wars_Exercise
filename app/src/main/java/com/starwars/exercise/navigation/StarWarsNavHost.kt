@@ -1,13 +1,11 @@
 package com.starwars.exercise.navigation
 
 import androidx.compose.runtime.Composable
-import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
-import com.starwars.exercise.ui.compare.CompareResultScreen
 import com.starwars.exercise.ui.compare.CompareScreen
 import com.starwars.exercise.ui.compare.CompareVsScreen
 import com.starwars.exercise.ui.compare.CompareTableScreen
@@ -47,10 +45,6 @@ fun StarWarsNavHost(themeViewModel: ThemeViewModel) {
                 onBack = { navController.popBackStack() },
                 onCompare = { navController.navigate(Screen.Compare.route) },
                 onGalaxyMap = { navController.navigate(Screen.GalaxyMap.route) },
-                onLogout = {
-                    navController.popBackStack(Screen.Splash.route, inclusive = false)
-                    navController.navigate(Screen.OnboardingOne.route)
-                },
                 themeViewModel = themeViewModel
             )
         }

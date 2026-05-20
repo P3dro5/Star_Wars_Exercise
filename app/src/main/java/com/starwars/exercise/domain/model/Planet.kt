@@ -11,5 +11,5 @@ data class Planet(
     val orbitalPeriod: String,
     val rotationPeriod: String,
     val residentIds: List<Int> = emptyList(),
-    val galaxyPosition: GalaxyPosition = GalaxyPosition(0.5f, 0.5f)
+    val galaxyPosition: GalaxyPosition = GalaxyPosition(-1000f, -1000f)
 )

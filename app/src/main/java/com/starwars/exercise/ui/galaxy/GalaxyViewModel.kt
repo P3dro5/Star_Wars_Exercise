@@ -6,7 +6,9 @@ import com.starwars.exercise.core.Resource
 import com.starwars.exercise.domain.model.Planet
 import com.starwars.exercise.domain.usecase.GetAllPlanetsUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -28,6 +30,10 @@ class GalaxyViewModel @Inject constructor(
     private val _selectedPlanet = MutableStateFlow<Planet?>(null)
     val selectedPlanet: StateFlow<Planet?> = _selectedPlanet
 
+    // zoom commands as a channel so each emission is consumed once
+    private val _zoomCommand = MutableSharedFlow<ZoomCommand>(extraBufferCapacity = 1)
+    val zoomCommand: SharedFlow<ZoomCommand> = _zoomCommand
+
     init { loadPlanets() }
 
     fun loadPlanets() {
@@ -44,4 +50,22 @@ class GalaxyViewModel @Inject constructor(
     fun onPlanetSelected(planet: Planet?) {
         _selectedPlanet.value = planet
     }
+
+    fun onZoomIn() {
+        viewModelScope.launch { _zoomCommand.emit(ZoomCommand.ZoomIn) }
+    }
+
+    fun onZoomOut() {
+        viewModelScope.launch { _zoomCommand.emit(ZoomCommand.ZoomOut) }
+    }
+
+    fun onZoomReset() {
+        viewModelScope.launch { _zoomCommand.emit(ZoomCommand.Reset) }
+    }
+}
+
+sealed class ZoomCommand {
+    data object ZoomIn : ZoomCommand()
+    data object ZoomOut : ZoomCommand()
+    data object Reset : ZoomCommand()
 }

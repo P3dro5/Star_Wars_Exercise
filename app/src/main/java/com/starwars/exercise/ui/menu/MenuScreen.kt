@@ -1,5 +1,6 @@
 package com.starwars.exercise.ui.menu
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -8,13 +9,9 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.automirrored.filled.ArrowForward
-import androidx.compose.material.icons.automirrored.filled.Send
+import androidx.compose.foundation.layout.size
 import androidx.compose.material3.Button
 import androidx.compose.material3.FilterChip
-import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -22,9 +19,11 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.starwars.exercise.R
 import com.starwars.exercise.ui.theme.ThemeMode
 import com.starwars.exercise.ui.theme.ThemeViewModel
 
@@ -33,7 +32,6 @@ fun MenuScreen(
     onBack: () -> Unit,
     onCompare: () -> Unit,
     onGalaxyMap: () -> Unit,
-    onLogout: () -> Unit,
     themeViewModel: ThemeViewModel = hiltViewModel()
 ) {
     val isDarkTheme by themeViewModel.isDarkTheme.collectAsStateWithLifecycle()
@@ -78,13 +76,15 @@ fun MenuScreen(
                             Text(mode.name.lowercase().replaceFirstChar { it.uppercase() })
                         },
                         leadingIcon = {
-                            Icon(
-                                imageVector = when (mode) {
-                                    ThemeMode.LIGHT -> Icons.AutoMirrored.Default.ArrowForward
-                                    ThemeMode.DARK ->  Icons.AutoMirrored.Default.ArrowBack
-                                    ThemeMode.SYSTEM ->  Icons.AutoMirrored.Default.Send
-                                },
-                                contentDescription = mode.name
+                            Image(
+                                painter = painterResource(id = when (mode) {
+                                    ThemeMode.LIGHT -> R.drawable.lightsaber_green
+                                    ThemeMode.DARK ->  R.drawable.lightsaber_red
+                                    ThemeMode.SYSTEM -> R.drawable.darth_vader
+                                }),
+                                contentDescription =  mode.name,
+                                modifier = Modifier
+                                    .size(24.dp),
                             )
                         },
                         modifier = Modifier.weight(1f)
@@ -99,9 +99,6 @@ fun MenuScreen(
             }
             Button(onClick = onGalaxyMap, modifier = Modifier.fillMaxWidth()) {
                 Text(text = "Galaxy Map")
-            }
-            Button(onClick = onLogout, modifier = Modifier.fillMaxWidth()) {
-                Text(text = "Logout")
             }
             Button(onClick = onBack, modifier = Modifier.fillMaxWidth()) {
                 Text(text = "Back")

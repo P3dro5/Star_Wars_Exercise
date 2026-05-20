@@ -12,13 +12,19 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material.icons.filled.KeyboardArrowUp
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -26,6 +32,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -64,7 +71,7 @@ fun GalaxyMapScreen(
                 title = { Text("Galaxy Map") },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Default.ArrowBack, contentDescription = "Back")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
                     }
                 }
             )
@@ -93,13 +100,24 @@ fun GalaxyMapScreen(
                         selectedPlanet = selectedPlanet,
                         onPlanetSelected = { viewModel.onPlanetSelected(it) }
                     )
+
+                    // zoom controls — bottom right
+                    ZoomControls(
+                        onZoomIn = { viewModel.onZoomIn() },
+                        onZoomOut = { viewModel.onZoomOut() },
+                        onReset = { viewModel.onZoomReset() },
+                        modifier = Modifier
+                            .align(Alignment.BottomEnd)
+                            .padding(16.dp)
+                    )
+
                     selectedPlanet?.let { planet ->
                         PlanetInfoCard(
                             planet = planet,
                             onDismiss = { viewModel.onPlanetSelected(null) },
                             modifier = Modifier
                                 .align(Alignment.BottomCenter)
-                                .padding(16.dp)
+                                .padding(start = 16.dp, end = 80.dp, bottom = 16.dp)
                         )
                     }
                 }
@@ -112,12 +130,32 @@ fun GalaxyMapScreen(
 fun GalaxyMap(
     planets: List<Planet>,
     selectedPlanet: Planet?,
-    onPlanetSelected: (Planet?) -> Unit
+    onPlanetSelected: (Planet?) -> Unit,
+    viewModel: GalaxyViewModel = hiltViewModel()
 ) {
     var imageView by remember { mutableStateOf<SubsamplingScaleImageView?>(null) }
     var isReady by remember { mutableStateOf(false) }
-    // trigger recomposition on pan/zoom
     var stateVersion by remember { mutableStateOf(0) }
+
+    // consume zoom commands from ViewModel
+    LaunchedEffect(Unit) {
+        viewModel.zoomCommand.collect { command ->
+            val iv = imageView ?: return@collect
+            when (command) {
+                ZoomCommand.ZoomIn -> {
+                    val newScale = (iv.scale * 1.5f).coerceAtMost(iv.maxScale)
+                    iv.animatingScale(newScale)
+                }
+                ZoomCommand.ZoomOut -> {
+                    val newScale = (iv.scale / 1.5f).coerceAtLeast(iv.minScale)
+                    iv.animatingScale(newScale)
+                }
+                ZoomCommand.Reset -> {
+                    iv.animateScaleAndCenter(iv.minScale, PointF(iv.sWidth / 2f, iv.sHeight / 2f))?.start()
+                }
+            }
+        }
+    }
 
     Box(modifier = Modifier.fillMaxSize()) {
         AndroidView(
@@ -128,9 +166,7 @@ fun GalaxyMap(
                     maxScale = 8f
                     setOnImageEventListener(object :
                         SubsamplingScaleImageView.OnImageEventListener {
-                        override fun onReady() {
-                            isReady = true
-                        }
+                        override fun onReady() { isReady = true }
                         override fun onImageLoaded() {}
                         override fun onPreviewLoadError(e: Exception) {}
                         override fun onImageLoadError(e: Exception) {}
@@ -140,10 +176,10 @@ fun GalaxyMap(
                     setOnStateChangedListener(object :
                         SubsamplingScaleImageView.OnStateChangedListener {
                         override fun onScaleChanged(newScale: Float, origin: Int) {
-                            stateVersion++  // trigger recomposition so markers follow zoom
+                            stateVersion++
                         }
                         override fun onCenterChanged(newCenter: PointF?, origin: Int) {
-                            stateVersion++  // trigger recomposition so markers follow pan
+                            stateVersion++
                         }
                     })
                     imageView = this
@@ -152,9 +188,7 @@ fun GalaxyMap(
             modifier = Modifier.fillMaxSize()
         )
 
-        // only draw markers once image is ready and view is available
         if (isReady) {
-            // stateVersion read here so recomposition triggers on pan/zoom
             val state = stateVersion
             Canvas(
                 modifier = Modifier
@@ -163,9 +197,8 @@ fun GalaxyMap(
                         detectTapGestures { tapOffset ->
                             val tapped = planets.firstOrNull { planet ->
                                 val iv = imageView ?: return@detectTapGestures
-                                val imageX = planet.galaxyPosition.x * (iv.sWidth)
-                                val imageY = planet.galaxyPosition.y * (iv.sHeight)
-                                // use library's own conversion
+                                val imageX = planet.galaxyPosition.x * iv.sWidth
+                                val imageY = planet.galaxyPosition.y * iv.sHeight
                                 val screenPoint = iv.sourceToViewCoord(imageX, imageY)
                                     ?: return@firstOrNull false
                                 val distance = kotlin.math.sqrt(
@@ -182,18 +215,12 @@ fun GalaxyMap(
                     val iv = imageView ?: return@Canvas
                     val imageX = planet.galaxyPosition.x * iv.sWidth
                     val imageY = planet.galaxyPosition.y * iv.sHeight
-
-                    // use library's own sourceToViewCoord for accurate mapping
                     val screenPoint = iv.sourceToViewCoord(imageX, imageY) ?: return@forEach
 
                     val isSelected = planet.id == selectedPlanet?.id
+                    val dotColor = if (isSelected) Color(0xFFFFD700) else Color(0xFF4FC3F7)
                     val dotRadius = if (isSelected) 14f else 8f
-                    val dotColor = if (isSelected)
-                        Color(0xFFFFD700)  // gold
-                    else
-                        Color(0xFF4FC3F7)  // light blue
 
-                    // glow for selected
                     if (isSelected) {
                         drawCircle(
                             color = dotColor.copy(alpha = 0.3f),
@@ -201,13 +228,11 @@ fun GalaxyMap(
                             center = Offset(screenPoint.x, screenPoint.y)
                         )
                     }
-
                     drawCircle(
                         color = dotColor,
                         radius = dotRadius,
                         center = Offset(screenPoint.x, screenPoint.y)
                     )
-
                     drawContext.canvas.nativeCanvas.drawText(
                         planet.name,
                         screenPoint.x + 16f,
@@ -302,4 +327,55 @@ fun PlanetInfoRow(label: String, value: String) {
             fontWeight = FontWeight.Medium
         )
     }
+}
+
+@Composable
+fun ZoomControls(
+    onZoomIn: () -> Unit,
+    onZoomOut: () -> Unit,
+    onReset: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Card(
+        modifier = modifier,
+        elevation = CardDefaults.cardElevation(6.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.85f)
+        )
+    ) {
+        Column(
+            modifier = Modifier.padding(4.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(2.dp)
+        ) {
+            IconButton(onClick = onZoomIn) {
+                Icon(
+                    imageVector = Icons.Default.KeyboardArrowUp,
+                    contentDescription = "Zoom in",
+                    tint = MaterialTheme.colorScheme.onSurface
+                )
+            }
+            HorizontalDivider(modifier = Modifier.width(32.dp))
+            IconButton(onClick = onZoomOut) {
+                Icon(
+                    imageVector = Icons.Default.KeyboardArrowDown,
+                    contentDescription = "Zoom out",
+                    tint = MaterialTheme.colorScheme.onSurface
+                )
+            }
+            HorizontalDivider(modifier = Modifier.width(32.dp))
+            IconButton(onClick = onReset) {
+                Icon(
+                    imageVector = Icons.Default.Refresh,
+                    contentDescription = "Reset zoom",
+                    tint = MaterialTheme.colorScheme.onSurface
+                )
+            }
+        }
+    }
+}
+
+private fun SubsamplingScaleImageView.animatingScale(targetScale: Float) {
+    val center = center ?: return
+    animateScaleAndCenter(targetScale, center)?.start()
 }

@@ -3,7 +3,7 @@ package com.starwars.exercise.data.api.dto
 import com.squareup.moshi.Json
 
 data class PlanetDto(
-    val name: String = "unknown",
+    val name: String = "",
     val climate: String = "unknown",
     val terrain: String = "unknown",
     val population: String = "unknown",
