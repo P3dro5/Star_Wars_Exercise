@@ -1,7 +1,7 @@
 package com.starwars.exercise.ui.components
 
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -9,28 +9,17 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Check
 import androidx.compose.material3.Card
-import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
-import androidx.compose.material3.ListItem
+import androidx.compose.material3.CardColors
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
-import com.starwars.exercise.domain.model.Species
-import com.starwars.exercise.ui.home.SpeciesUiState
 
 @Composable
 fun SectionHeader(modifier: Modifier = Modifier, title: String, subtitle: String? = null) {
@@ -64,30 +53,29 @@ fun CharacterImage(name: String, characterId: Int, image: String) {
 }
 
 @Composable
-fun PersonListItem(name: String, id: Int, image: String, subtitle: String, onClick: () -> Unit, modifier: Modifier = Modifier) {
+fun PersonListItem(
+    name: String,
+    id: Int,
+    image: String,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
     Card(
         modifier = modifier
             .fillMaxWidth()
             .padding(horizontal = 16.dp, vertical = 8.dp)
-            .clickable(onClick = onClick),
+            .clickable(onClick = onClick).border(1.dp, MaterialTheme.colorScheme.tertiary, RoundedCornerShape(16.dp)),
+        colors = CardColors(containerColor = MaterialTheme.colorScheme.onPrimary, contentColor = MaterialTheme.colorScheme.onPrimary, disabledContentColor = MaterialTheme.colorScheme.onPrimary, disabledContainerColor = MaterialTheme.colorScheme.onPrimary),
         shape = RoundedCornerShape(16.dp)
     ) {
         Row(modifier = Modifier.padding(16.dp)) {
-            Column(modifier = Modifier.fillMaxWidth()) {
                 CharacterImage(name = name, characterId = id, image = image)
-                Spacer(modifier = Modifier.height(4.dp))
+                Spacer(modifier = Modifier.padding(start = 10.dp))
                 Text(
                     text = name,
                     style = MaterialTheme.typography.headlineSmall,
-                    color = MaterialTheme.colorScheme.onSurface
-                )
-                Spacer(modifier = Modifier.height(4.dp))
-                Text(
-                    text = subtitle,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.75f)
+                    color = MaterialTheme.colorScheme.primary
                 )
             }
-        }
     }
 }

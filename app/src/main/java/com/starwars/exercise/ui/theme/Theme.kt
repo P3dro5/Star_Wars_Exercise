@@ -16,7 +16,8 @@ private val DarkColors = darkColorScheme(
     surface = StarWarsSurface,
     onSurface = StarWarsOnSurface,
     error = StarWarsError,
-    onError = StarWarsWhite
+    onError = StarWarsWhite,
+    tertiary = StarWarsBlue
 )
 
 private val LightColors = lightColorScheme(
@@ -29,7 +30,8 @@ private val LightColors = lightColorScheme(
     surface = StarWarsSurfaceBright,
     onSurface = StarWarsWhite,
     error = StarWarsError,
-    onError = StarWarsWhite
+    onError = StarWarsWhite,
+    tertiary = StarWarsBlue
 )
 
 @Composable

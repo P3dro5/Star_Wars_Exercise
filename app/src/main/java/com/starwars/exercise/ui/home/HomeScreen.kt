@@ -18,8 +18,8 @@ import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
+import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Menu
-import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material3.Badge
 import androidx.compose.material3.BadgedBox
 import androidx.compose.material3.Button
@@ -65,7 +65,7 @@ import com.starwars.exercise.domain.model.availableGenders
 fun HomeScreen(
     onMenu: () -> Unit,
     onCharacterSelected: (Int) -> Unit,
-    onCompare: () -> Unit,
+    onGalaxyMap: () -> Unit,
     viewModel: HomeViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -128,10 +128,10 @@ fun HomeScreen(
                     }
                 },
                 actions = {
-                    IconButton(onClick = onCompare) {
+                    IconButton(onClick = onGalaxyMap) {
                         Icon(
-                            imageVector = Icons.Default.PlayArrow,
-                            contentDescription = "Compare"
+                            imageVector = Icons.Default.LocationOn,
+                            contentDescription = "Galaxy Map"
                         )
                     }
                 }
@@ -203,11 +203,10 @@ fun HomeScreen(
                         ) { index ->
                             val person = characters[index]
                             PersonListItem(
-                                id = person?.id ?: 0,
                                 name = person?.name ?: "",
-                                subtitle = "${person?.species} • ${person?.homeworld}",
-                                onClick = { onCharacterSelected(person?.id ?: 0) },
-                                image = person?.image ?: ""
+                                id = person?.id ?: 0,
+                                image = person?.image ?: "",
+                                onClick = { onCharacterSelected(person?.id ?: 0) }
                             )
                         }
                         when (characters.loadState.append) {

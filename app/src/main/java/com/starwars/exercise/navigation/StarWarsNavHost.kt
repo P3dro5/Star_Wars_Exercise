@@ -37,7 +37,7 @@ fun StarWarsNavHost(themeViewModel: ThemeViewModel) {
             HomeScreen(
                 onMenu = { navController.navigate(Screen.Menu.route) },
                 onCharacterSelected = { navController.navigate(Screen.Detail.createRoute(it)) },
-                onCompare = { navController.navigate(Screen.Compare.route) }
+                onGalaxyMap = { navController.navigate(Screen.GalaxyMap.route) }
             )
         }
         composable(Screen.Menu.route) {
