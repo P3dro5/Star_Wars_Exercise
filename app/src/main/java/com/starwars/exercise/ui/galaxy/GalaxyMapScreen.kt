@@ -36,8 +36,6 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.layout.onGloballyPositioned
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
@@ -116,19 +114,12 @@ fun GalaxyMap(
     selectedPlanet: Planet?,
     onPlanetSelected: (Planet?) -> Unit
 ) {
-    val context = LocalContext.current
-
-    // track image size for coordinate mapping
-    var imageWidth by remember { mutableStateOf(0) }
-    var imageHeight by remember { mutableStateOf(0) }
-    var viewWidth by remember { mutableStateOf(0) }
-    var viewHeight by remember { mutableStateOf(0) }
-    var scale by remember { mutableStateOf(1f) }
-    var offsetX by remember { mutableStateOf(0f) }
-    var offsetY by remember { mutableStateOf(0f) }
+    var imageView by remember { mutableStateOf<SubsamplingScaleImageView?>(null) }
+    var isReady by remember { mutableStateOf(false) }
+    // trigger recomposition on pan/zoom
+    var stateVersion by remember { mutableStateOf(0) }
 
     Box(modifier = Modifier.fillMaxSize()) {
-        // SubsamplingScaleImageView via AndroidView
         AndroidView(
             factory = { ctx ->
                 SubsamplingScaleImageView(ctx).apply {
@@ -138,8 +129,7 @@ fun GalaxyMap(
                     setOnImageEventListener(object :
                         SubsamplingScaleImageView.OnImageEventListener {
                         override fun onReady() {
-                            imageWidth = sWidth
-                            imageHeight = sHeight
+                            isReady = true
                         }
                         override fun onImageLoaded() {}
                         override fun onPreviewLoadError(e: Exception) {}
@@ -150,84 +140,81 @@ fun GalaxyMap(
                     setOnStateChangedListener(object :
                         SubsamplingScaleImageView.OnStateChangedListener {
                         override fun onScaleChanged(newScale: Float, origin: Int) {
-                            scale = newScale
+                            stateVersion++  // trigger recomposition so markers follow zoom
                         }
                         override fun onCenterChanged(newCenter: PointF?, origin: Int) {
-                            newCenter?.let {
-                                offsetX = it.x
-                                offsetY = it.y
-                            }
+                            stateVersion++  // trigger recomposition so markers follow pan
                         }
                     })
+                    imageView = this
                 }
             },
-            modifier = Modifier
-                .fillMaxSize()
-                .onGloballyPositioned { coords ->
-                    viewWidth = coords.size.width
-                    viewHeight = coords.size.height
-                }
+            modifier = Modifier.fillMaxSize()
         )
 
-        // Planet markers overlay using Canvas
-        if (imageWidth > 0 && imageHeight > 0) {
-            Canvas(modifier = Modifier
-                .fillMaxSize()
-                .pointerInput(planets) {
-                    detectTapGestures { tapOffset ->
-                        // find tapped planet
-                        val tapped = planets.firstOrNull { planet ->
-                            val screenPos = planet.galaxyPosition.toScreenCoords(
-                                viewWidth.toFloat(), viewHeight.toFloat(),
-                                imageWidth.toFloat(), imageHeight.toFloat(),
-                                scale, offsetX, offsetY
-                            )
-                            val distance = kotlin.math.sqrt(
-                                (tapOffset.x - screenPos.first).pow(2) +
-                                        (tapOffset.y - screenPos.second).pow(2)
-                            )
-                            distance < 40f
+        // only draw markers once image is ready and view is available
+        if (isReady) {
+            // stateVersion read here so recomposition triggers on pan/zoom
+            val state = stateVersion
+            Canvas(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .pointerInput(planets) {
+                        detectTapGestures { tapOffset ->
+                            val tapped = planets.firstOrNull { planet ->
+                                val iv = imageView ?: return@detectTapGestures
+                                val imageX = planet.galaxyPosition.x * (iv.sWidth)
+                                val imageY = planet.galaxyPosition.y * (iv.sHeight)
+                                // use library's own conversion
+                                val screenPoint = iv.sourceToViewCoord(imageX, imageY)
+                                    ?: return@firstOrNull false
+                                val distance = kotlin.math.sqrt(
+                                    (tapOffset.x - screenPoint.x).pow(2) +
+                                            (tapOffset.y - screenPoint.y).pow(2)
+                                )
+                                distance < 40f
+                            }
+                            onPlanetSelected(tapped)
                         }
-                        onPlanetSelected(tapped)
                     }
-                }
             ) {
                 planets.forEach { planet ->
-                    val (x, y) = planet.galaxyPosition.toScreenCoords(
-                        size.width, size.height,
-                        imageWidth.toFloat(), imageHeight.toFloat(),
-                        scale, offsetX, offsetY
-                    )
+                    val iv = imageView ?: return@Canvas
+                    val imageX = planet.galaxyPosition.x * iv.sWidth
+                    val imageY = planet.galaxyPosition.y * iv.sHeight
+
+                    // use library's own sourceToViewCoord for accurate mapping
+                    val screenPoint = iv.sourceToViewCoord(imageX, imageY) ?: return@forEach
+
                     val isSelected = planet.id == selectedPlanet?.id
                     val dotRadius = if (isSelected) 14f else 8f
-                    val color = if (isSelected)
-                        android.graphics.Color.parseColor("#FFD700")  // gold
+                    val dotColor = if (isSelected)
+                        Color(0xFFFFD700)  // gold
                     else
-                        android.graphics.Color.parseColor("#4FC3F7")  // light blue
+                        Color(0xFF4FC3F7)  // light blue
 
-                    // glow effect for selected
+                    // glow for selected
                     if (isSelected) {
                         drawCircle(
-                            color = Color(color).copy(alpha = 0.3f),
+                            color = dotColor.copy(alpha = 0.3f),
                             radius = 28f,
-                            center = Offset(x, y)
+                            center = Offset(screenPoint.x, screenPoint.y)
                         )
                     }
 
                     drawCircle(
-                        color = Color(color),
+                        color = dotColor,
                         radius = dotRadius,
-                        center = Offset(x, y)
+                        center = Offset(screenPoint.x, screenPoint.y)
                     )
 
-                    // planet name label
                     drawContext.canvas.nativeCanvas.drawText(
                         planet.name,
-                        x + 16f,
-                        y + 5f,
+                        screenPoint.x + 16f,
+                        screenPoint.y + 5f,
                         android.graphics.Paint().apply {
                             textSize = if (isSelected) 32f else 24f
-                            this.color = if (isSelected)
+                            color = if (isSelected)
                                 android.graphics.Color.parseColor("#FFD700")
                             else
                                 android.graphics.Color.WHITE

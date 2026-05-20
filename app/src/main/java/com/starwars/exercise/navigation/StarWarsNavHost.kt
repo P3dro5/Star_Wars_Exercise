@@ -12,15 +12,17 @@ import com.starwars.exercise.ui.compare.CompareScreen
 import com.starwars.exercise.ui.compare.CompareVsScreen
 import com.starwars.exercise.ui.compare.CompareTableScreen
 import com.starwars.exercise.ui.detail.CharacterDetailScreen
+import com.starwars.exercise.ui.galaxy.GalaxyMapScreen
 import com.starwars.exercise.ui.home.HomeScreen
 import com.starwars.exercise.ui.menu.MenuScreen
 import com.starwars.exercise.ui.onboarding.OnboardingOneScreen
 import com.starwars.exercise.ui.onboarding.OnboardingTwoScreen
 import com.starwars.exercise.ui.profile.CharacterProfileScreen
 import com.starwars.exercise.ui.splash.SplashScreen
+import com.starwars.exercise.ui.theme.ThemeViewModel
 
 @Composable
-fun StarWarsNavHost() {
+fun StarWarsNavHost(themeViewModel: ThemeViewModel) {
     val navController = rememberNavController()
 
     NavHost(navController = navController, startDestination = Screen.Splash.route) {
@@ -44,40 +46,23 @@ fun StarWarsNavHost() {
             MenuScreen(
                 onBack = { navController.popBackStack() },
                 onCompare = { navController.navigate(Screen.Compare.route) },
+                onGalaxyMap = { navController.navigate(Screen.GalaxyMap.route) },
                 onLogout = {
                     navController.popBackStack(Screen.Splash.route, inclusive = false)
                     navController.navigate(Screen.OnboardingOne.route)
-                }
+                },
+                themeViewModel = themeViewModel
             )
         }
         composable(Screen.GalaxyMap.route) {
-            HomeScreen(
-                onMenu = { navController.navigate(Screen.Menu.route) },
-                onCharacterSelected = { navController.navigate(Screen.Detail.createRoute(it)) },
-                onCompare = { navController.navigate(Screen.Compare.route) }
-            )
+            GalaxyMapScreen(onBack = { navController.popBackStack() })
         }
         composable(Screen.Compare.route) {
             CompareScreen(
                 onBack = { navController.popBackStack() },
-                onCompareResult = { firstId, secondId -> navController.navigate(Screen.CompareResult.createRoute(firstId, secondId)) }
-            )
-        }
-        composable(
-            route = Screen.CompareResult.route,
-            arguments = listOf(
-                navArgument("firstId") { type = NavType.IntType },
-                navArgument("secondId") { type = NavType.IntType }
-            )
-        ) { backStackEntry ->
-            val firstId = backStackEntry.arguments?.getInt("firstId") ?: 1
-            val secondId = backStackEntry.arguments?.getInt("secondId") ?: 2
-            CompareResultScreen(
-                firstId = firstId,
-                secondId = secondId,
-                onBack = { navController.popBackStack() },
-                onVs = { navController.navigate(Screen.CompareVs.createRoute(firstId, secondId)) },
-                onTable = { navController.navigate(Screen.CompareTable.createRoute(firstId, secondId)) }
+                onCompareResult = { firstId, secondId ->
+                    navController.navigate(Screen.CompareResult.createRoute(firstId, secondId))
+                }
             )
         }
         composable(
