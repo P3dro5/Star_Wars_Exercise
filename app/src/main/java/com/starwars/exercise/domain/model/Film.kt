@@ -7,8 +7,8 @@ data class FilmsResponseDto(
 )
 
 data class FilmDto(
-    @Json(name = "release_date") val releaseDate: String,
-    val characters: List<String>
+    @Json(name = "release_date") val releaseDate: String = "",
+    val characters: List<String> = emptyList()
 )
 
 data class CharacterFirstAppearance(

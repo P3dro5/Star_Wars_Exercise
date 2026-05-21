@@ -6,9 +6,8 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import com.starwars.exercise.ui.compare.CompareResultScreen
 import com.starwars.exercise.ui.compare.CompareScreen
-import com.starwars.exercise.ui.compare.CompareVsScreen
-import com.starwars.exercise.ui.compare.CompareTableScreen
 import com.starwars.exercise.ui.detail.CharacterDetailScreen
 import com.starwars.exercise.ui.galaxy.GalaxyMapScreen
 import com.starwars.exercise.ui.home.HomeScreen
@@ -37,6 +36,7 @@ fun StarWarsNavHost(themeViewModel: ThemeViewModel) {
             HomeScreen(
                 onMenu = { navController.navigate(Screen.Menu.route) },
                 onCharacterSelected = { navController.navigate(Screen.Detail.createRoute(it)) },
+                onCompareCharacters = { navController.navigate(Screen.Compare.route) },
                 onGalaxyMap = { navController.navigate(Screen.GalaxyMap.route) }
             )
         }
@@ -60,7 +60,7 @@ fun StarWarsNavHost(themeViewModel: ThemeViewModel) {
             )
         }
         composable(
-            route = Screen.CompareVs.route,
+            route = Screen.CompareResult.route,
             arguments = listOf(
                 navArgument("firstId") { type = NavType.IntType },
                 navArgument("secondId") { type = NavType.IntType }
@@ -68,25 +68,10 @@ fun StarWarsNavHost(themeViewModel: ThemeViewModel) {
         ) { backStackEntry ->
             val firstId = backStackEntry.arguments?.getInt("firstId") ?: 1
             val secondId = backStackEntry.arguments?.getInt("secondId") ?: 2
-            CompareVsScreen(
+            CompareResultScreen(
                 firstId = firstId,
                 secondId = secondId,
-                onBack = { navController.popBackStack() }
-            )
-        }
-        composable(
-            route = Screen.CompareTable.route,
-            arguments = listOf(
-                navArgument("firstId") { type = NavType.IntType },
-                navArgument("secondId") { type = NavType.IntType }
-            )
-        ) { backStackEntry ->
-            val firstId = backStackEntry.arguments?.getInt("firstId") ?: 1
-            val secondId = backStackEntry.arguments?.getInt("secondId") ?: 2
-            CompareTableScreen(
-                firstId = firstId,
-                secondId = secondId,
-                onBack = { navController.popBackStack() }
+                onBack = { navController.popBackStack() },
             )
         }
         composable(

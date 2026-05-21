@@ -64,6 +64,7 @@ class HomeViewModel @Inject constructor(
 
     init {
         viewModelScope.launch {
+
             // debounce search by 400ms
             _searchQuery
                 .debounce(400)

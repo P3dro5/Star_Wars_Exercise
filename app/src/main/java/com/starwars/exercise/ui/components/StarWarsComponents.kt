@@ -18,6 +18,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import com.starwars.exercise.R
@@ -50,7 +52,6 @@ fun CharacterImage(name: String, image: String) {
 @Composable
 fun PersonListItem(
     name: String,
-    id: Int,
     image: String,
     onClick: () -> Unit,
     modifier: Modifier = Modifier
@@ -59,8 +60,8 @@ fun PersonListItem(
         modifier = modifier
             .fillMaxWidth()
             .padding(horizontal = 16.dp, vertical = 8.dp)
-            .clickable(onClick = onClick).border(1.dp, MaterialTheme.colorScheme.tertiary, RoundedCornerShape(16.dp)),
-        colors = CardColors(containerColor = MaterialTheme.colorScheme.onPrimary, contentColor = MaterialTheme.colorScheme.onPrimary, disabledContentColor = MaterialTheme.colorScheme.onPrimary, disabledContainerColor = MaterialTheme.colorScheme.onPrimary),
+            .clickable(onClick = onClick).border(1.dp, MaterialTheme.colorScheme.primary, RoundedCornerShape(16.dp)),
+        colors = CardColors(containerColor = MaterialTheme.colorScheme.surface, contentColor = MaterialTheme.colorScheme.onPrimary, disabledContentColor = MaterialTheme.colorScheme.onPrimary, disabledContainerColor = MaterialTheme.colorScheme.onPrimary),
         shape = RoundedCornerShape(16.dp)
     ) {
         Row(modifier = Modifier.padding(16.dp)) {
@@ -68,8 +69,11 @@ fun PersonListItem(
                 Spacer(modifier = Modifier.padding(start = 10.dp))
                 Text(
                     text = name,
-                    style = MaterialTheme.typography.headlineSmall,
-                    color = MaterialTheme.colorScheme.primary
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.Bold,
+                    textAlign = TextAlign.Center,
+                    maxLines = 2,
+                    color = MaterialTheme.colorScheme.onSurface
                 )
             }
     }

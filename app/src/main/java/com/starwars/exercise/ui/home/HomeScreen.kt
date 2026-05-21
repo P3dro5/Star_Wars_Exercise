@@ -20,6 +20,7 @@ import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
+import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material3.Badge
@@ -34,6 +35,7 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.IconButtonColors
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.TextButton
@@ -69,6 +71,7 @@ fun HomeScreen(
     onMenu: () -> Unit,
     onCharacterSelected: (Int) -> Unit,
     onGalaxyMap: () -> Unit,
+    onCompareCharacters: () -> Unit,
     viewModel: HomeViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -124,13 +127,16 @@ fun HomeScreen(
                     )
                 },
                 navigationIcon = {
-                    IconButton(onClick = onMenu) {
+                    IconButton(onClick = onMenu, colors = IconButtonColors(contentColor = MaterialTheme.colorScheme.primary, containerColor = Color.Transparent, disabledContentColor = Color.Transparent, disabledContainerColor = Color.Transparent)) {
                         Icon(Icons.Default.Menu, contentDescription = "Menu")
                     }
                 },
                 actions = {
-                    IconButton(onClick = onGalaxyMap) {
-                        Icon(Icons.Default.PlayArrow, contentDescription = "Galaxy Map")
+                    IconButton(onClick = { onGalaxyMap.invoke() },  colors = IconButtonColors(contentColor = MaterialTheme.colorScheme.primary, containerColor = Color.Transparent, disabledContentColor = Color.Transparent, disabledContainerColor = Color.Transparent)) {
+                        Icon(Icons.Default.LocationOn, contentDescription = "Galaxy Map")
+                    }
+                    IconButton(onClick = { onCompareCharacters.invoke() } , colors = IconButtonColors(contentColor = MaterialTheme.colorScheme.primary, containerColor = Color.Transparent, disabledContentColor = Color.Transparent, disabledContainerColor = Color.Transparent)) {
+                        Icon(Icons.Default.PlayArrow, contentDescription = "Compare")
                     }
                 }
             )
@@ -183,7 +189,7 @@ fun HomeScreen(
                             if (count > 0) Badge { Text("$count") }
                         }
                     ) {
-                        IconButton(onClick = { showFilterSheet = true }) {
+                        IconButton(onClick = { showFilterSheet = true },  colors = IconButtonColors(contentColor = MaterialTheme.colorScheme.primary, containerColor = Color.Transparent, disabledContentColor = Color.Transparent, disabledContainerColor = Color.Transparent)) {
                             Icon(Icons.AutoMirrored.Default.List, contentDescription = "Filters")
                         }
                     }
@@ -210,7 +216,6 @@ fun HomeScreen(
                                 val person = characters[index]
                                 PersonListItem(
                                     name = person?.name ?: "",
-                                    id = person?.id ?: 0,
                                     image = person?.image ?: "",
                                     onClick = { onCharacterSelected(person?.id ?: 0) }
                                 )

@@ -20,4 +20,8 @@ interface StarWarsRepository {
     suspend fun getAllSpecies(): Resource<List<Species>>
     suspend fun getCharacterFirstAppearanceYears(): Resource<Map<Int, Int>>
     suspend fun searchAll(query: String): Resource<List<SearchResult>>
+    suspend fun getAllCharacters(): Resource<List<Person>>
+    suspend fun getCharacterImages(): Resource<List<PersonImage>>
+    suspend fun resolveHomeworldName(url: String): String
+    suspend fun resolveSpeciesName(url: String): String
 }

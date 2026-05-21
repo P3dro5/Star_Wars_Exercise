@@ -7,6 +7,6 @@ data class SpeciesResponseDto(
 
 data class SpeciesDto(
     val name: String = "Unknown",
-    val next: String? = null,
-    val people: List<String> = emptyList()
+    val people: List<String> = emptyList(),
+    val url: String = ""
 )

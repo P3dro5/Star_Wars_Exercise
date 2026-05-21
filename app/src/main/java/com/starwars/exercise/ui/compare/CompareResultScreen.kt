@@ -12,16 +12,12 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material3.Button
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
@@ -32,11 +28,13 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImage
+import com.starwars.exercise.R
 import com.starwars.exercise.core.Resource
 import com.starwars.exercise.domain.model.Person
 import com.starwars.exercise.ui.components.ErrorState
@@ -48,8 +46,6 @@ fun CompareResultScreen(
     firstId: Int,
     secondId: Int,
     onBack: () -> Unit,
-    onVs: () -> Unit,
-    onTable: () -> Unit,
     viewModel: CompareViewModel = hiltViewModel()
 ) {
     val resultState = remember {
@@ -124,18 +120,6 @@ fun CompareResultScreen(
                     CompareStatRow("Films", first.filmCount.toString(), second.filmCount.toString())
 
                     Spacer(modifier = Modifier.weight(1f))
-
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        OutlinedButton(onClick = onVs, modifier = Modifier.weight(1f)) {
-                            Text("Side by Side")
-                        }
-                        Button(onClick = onTable, modifier = Modifier.weight(1f)) {
-                            Text("Table View")
-                        }
-                    }
                 }
             }
         }
@@ -151,6 +135,8 @@ fun HeroPortrait(person: Person) {
         AsyncImage(
             model = person.image,
             contentDescription = person.name,
+            placeholder = painterResource(R.drawable.darth_vader),
+            error = painterResource(R.drawable.darth_vader),
             modifier = Modifier
                 .size(80.dp)
                 .clip(CircleShape)

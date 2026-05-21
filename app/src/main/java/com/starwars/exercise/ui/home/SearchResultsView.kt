@@ -71,7 +71,6 @@ fun SearchResultsView(
                         items(characters, key = { "character_${it.person.id}" }) { result ->
                             PersonListItem(
                                 name = result.person.name,
-                                id = result.person.id,
                                 image = result.person.image,
                                 onClick = { onCharacterSelected(result.person.id) }
                             )

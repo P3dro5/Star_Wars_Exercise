@@ -25,7 +25,7 @@ import javax.net.ssl.X509TrustManager
 @Module
 @InstallIn(SingletonComponent::class)
 object NetworkModule {
-    private const val BASE_URL = "https://swapi.dev/api/"
+    private const val BASE_URL = "https://sw.simplr.sh/api/"
 
     private const val BASE_IMAGE_URL = "https://rawcdn.githack.com/akabab/starwars-api/0.2.1/api/"
 

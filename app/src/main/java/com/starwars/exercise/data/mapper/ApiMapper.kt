@@ -16,8 +16,14 @@ import com.starwars.exercise.domain.model.Planet
 import com.starwars.exercise.domain.model.Species
 import com.starwars.exercise.domain.model.Starship
 
-internal fun String.extractId(): Int {
-    return trimEnd('/').substringAfterLast('/').toIntOrNull() ?: 0
+// Update extractId extension to handle .json suffix
+fun String.extractId(): Int {
+    return this
+        .trimEnd('/')
+        .removeSuffix(".json")
+        .split("/")
+        .lastOrNull()
+        ?.toIntOrNull() ?: 0
 }
 
 internal fun PersonDto.toDomain(): Person {
@@ -156,20 +162,21 @@ internal fun PlanetEntity.toDomain(): Planet {
 internal fun SpeciesDto.toDomain(): Species = Species(
     name = name,
     peopleIds = people.mapNotNull { url ->
-        url.trimEnd('/').split("/").lastOrNull()?.toIntOrNull()
+        val id = url.extractId()
+        if (id > 0) id else null
     }
 )
 
 fun FilmDto.toCharacterAppearances(): List<Pair<Int, Int>> {
     val year = releaseDate.split("-").first().toIntOrNull() ?: Int.MAX_VALUE
     return characters.mapNotNull { url ->
-        val id = url.trimEnd('/').split("/").lastOrNull()?.toIntOrNull()
-        id?.let { Pair(it, year) }
+        val id = url.extractId()
+        if (id > 0) Pair(id, year) else null
     }
 }
 
 fun PlanetDto.toDomain(): Planet {
-    val id = url.trimEnd('/').split("/").lastOrNull()?.toIntOrNull() ?: 0
+    val id = url.extractId()
     return Planet(
         id = id,
         name = name,
@@ -180,9 +187,7 @@ fun PlanetDto.toDomain(): Planet {
         diameter = diameter,
         orbitalPeriod = orbitalPeriod,
         rotationPeriod = rotationPeriod,
-        residentIds = residents.mapNotNull { residentUrl ->
-            residentUrl.trimEnd('/').split("/").lastOrNull()?.toIntOrNull()
-        },
+        residentIds = residents.mapNotNull { it.extractId().takeIf { id -> id > 0 } },
         galaxyPosition = GalaxyPositions.getPosition(name)
     )
 }
