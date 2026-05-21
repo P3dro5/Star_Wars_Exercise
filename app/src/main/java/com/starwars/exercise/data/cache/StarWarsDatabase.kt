@@ -5,8 +5,7 @@ import androidx.room.RoomDatabase
 
 @Database(
     entities = [PersonEntity::class, StarshipEntity::class, PlanetEntity::class],
-    version = 1,
-    exportSchema = false
+    version = 2
 )
 abstract class StarWarsDatabase : RoomDatabase() {
     abstract fun personDao(): PersonDao

@@ -66,7 +66,7 @@ fun CompareScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Compare Heroes") },
+                title = { Text("Compare Characters") },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(Icons.Default.ArrowBack, contentDescription = "Back")

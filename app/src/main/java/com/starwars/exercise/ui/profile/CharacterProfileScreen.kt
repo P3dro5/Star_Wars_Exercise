@@ -53,7 +53,8 @@ fun CharacterProfileScreen(
                     SectionHeader(title = "Profile: ${person.name}")
                     Text(text = "Birth year: ${person.birthYear}", color = MaterialTheme.colorScheme.onBackground)
                     Text(text = "Species: ${person.species}", color = MaterialTheme.colorScheme.onBackground)
-                    Text(text = "Homeworld: ${person.homeworld}", color = MaterialTheme.colorScheme.onBackground)
+                    Text(text = "Homewor" +
+                            "ld: ${person.homeworld}", color = MaterialTheme.colorScheme.onBackground)
                     Text(text = "Hair: ${person.hairColor}", color = MaterialTheme.colorScheme.onBackground)
                     Text(text = "Skin: ${person.skinColor}", color = MaterialTheme.colorScheme.onBackground)
                     Text(text = "Eye color: ${person.eyeColor}", color = MaterialTheme.colorScheme.onBackground)

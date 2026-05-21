@@ -6,6 +6,7 @@ data class SpeciesResponseDto(
 )
 
 data class SpeciesDto(
-    val name: String,
-    val people: List<String>  // list of URLs e.g. "https://swapi.info/api/people/1/"
+    val name: String = "Unknown",
+    val next: String? = null,
+    val people: List<String> = emptyList()
 )

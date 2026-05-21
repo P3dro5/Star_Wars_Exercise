@@ -13,13 +13,15 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
-import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Menu
+import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material3.Badge
 import androidx.compose.material3.BadgedBox
 import androidx.compose.material3.Button
@@ -31,6 +33,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.TextButton
@@ -70,6 +73,8 @@ fun HomeScreen(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val searchQuery by viewModel.searchQuery.collectAsStateWithLifecycle()
+    val searchState by viewModel.searchState.collectAsStateWithLifecycle()
+    val isSearching by viewModel.isSearching.collectAsStateWithLifecycle()
     val speciesUiState by viewModel.speciesUiState.collectAsStateWithLifecycle()
     val filter by viewModel.filter.collectAsStateWithLifecycle()
     var showFilterSheet by remember { mutableStateOf(false) }
@@ -101,7 +106,7 @@ fun HomeScreen(
                     TextField(
                         value = searchQuery,
                         onValueChange = { viewModel.onSearchQueryChanged(it) },
-                        placeholder = { Text("Search characters...") },
+                        placeholder = { Text("Search...") },
                         singleLine = true,
                         colors = TextFieldDefaults.colors(
                             focusedContainerColor = Color.Transparent,
@@ -120,19 +125,12 @@ fun HomeScreen(
                 },
                 navigationIcon = {
                     IconButton(onClick = onMenu) {
-                        Icon(
-                            imageVector = Icons.Default.Menu,  // hamburger menu icon
-                            contentDescription = "Menu",
-                            tint = MaterialTheme.colorScheme.onSurface
-                        )
+                        Icon(Icons.Default.Menu, contentDescription = "Menu")
                     }
                 },
                 actions = {
                     IconButton(onClick = onGalaxyMap) {
-                        Icon(
-                            imageVector = Icons.Default.LocationOn,
-                            contentDescription = "Galaxy Map"
-                        )
+                        Icon(Icons.Default.PlayArrow, contentDescription = "Galaxy Map")
                     }
                 }
             )
@@ -143,108 +141,123 @@ fun HomeScreen(
                 .fillMaxSize()
                 .padding(paddingValues)
         ) {
-            // Sort row
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 4.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                SortChip(
-                    label = "Name",
-                    isSelected = filter.sortField == SortField.NAME,
-                    sortOrder = filter.sortOrder,
-                    onClick = {
-                        val newOrder = if (filter.sortField == SortField.NAME) {
-                            if (filter.sortOrder == SortOrder.ASCENDING) SortOrder.DESCENDING
-                            else SortOrder.ASCENDING
-                        } else SortOrder.ASCENDING
-                        viewModel.onSortChanged(SortField.NAME, newOrder)
-                        viewModel.applyFilters()
-                    }
-                )
-                SortChip(
-                    label = "Year",
-                    isSelected = filter.sortField == SortField.YEAR,
-                    sortOrder = filter.sortOrder,
-                    onClick = {
-                        val newOrder = if (filter.sortField == SortField.YEAR) {
-                            if (filter.sortOrder == SortOrder.ASCENDING) SortOrder.DESCENDING
-                            else SortOrder.ASCENDING
-                        } else SortOrder.ASCENDING
-                        viewModel.onSortChanged(SortField.YEAR, newOrder)
-                        viewModel.applyFilters()
-                    }
-                )
-                Spacer(modifier = Modifier.weight(1f))
-                BadgedBox(
-                    badge = {
-                        val count = filter.selectedSpecies.size + filter.selectedGenders.size
-                        if (count > 0) Badge { Text("$count") }
-                    }
+            // hide sort/filter row when searching
+            if (!isSearching) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 4.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    IconButton(onClick = { showFilterSheet = true }) {
-                        Icon(Icons.AutoMirrored.Default.List, contentDescription = "Filters")
+                    SortChip(
+                        label = "Name",
+                        isSelected = filter.sortField == SortField.NAME,
+                        sortOrder = filter.sortOrder,
+                        onClick = {
+                            val newOrder = if (filter.sortField == SortField.NAME) {
+                                if (filter.sortOrder == SortOrder.ASCENDING) SortOrder.DESCENDING
+                                else SortOrder.ASCENDING
+                            } else SortOrder.ASCENDING
+                            viewModel.onSortChanged(SortField.NAME, newOrder)
+                            viewModel.applyFilters()
+                        }
+                    )
+                    SortChip(
+                        label = "Year",
+                        isSelected = filter.sortField == SortField.YEAR,
+                        sortOrder = filter.sortOrder,
+                        onClick = {
+                            val newOrder = if (filter.sortField == SortField.YEAR) {
+                                if (filter.sortOrder == SortOrder.ASCENDING) SortOrder.DESCENDING
+                                else SortOrder.ASCENDING
+                            } else SortOrder.ASCENDING
+                            viewModel.onSortChanged(SortField.YEAR, newOrder)
+                            viewModel.applyFilters()
+                        }
+                    )
+                    Spacer(modifier = Modifier.weight(1f))
+                    BadgedBox(
+                        badge = {
+                            val count = filter.selectedSpecies.size + filter.selectedGenders.size
+                            if (count > 0) Badge { Text("$count") }
+                        }
+                    ) {
+                        IconButton(onClick = { showFilterSheet = true }) {
+                            Icon(Icons.AutoMirrored.Default.List, contentDescription = "Filters")
+                        }
                     }
                 }
             }
 
-            // Content
-            when (uiState) {
-                HomeUiState.Loading -> LoadingState(modifier = Modifier.fillMaxSize())
-                is HomeUiState.Success -> {
-                    val characters = (uiState as HomeUiState.Success)
-                        .characters.collectAsLazyPagingItems()
-                    LazyColumn(modifier = Modifier.fillMaxSize()) {
-                        items(
-                            count = characters.itemCount,
-                            key = characters.itemKey { it.id }
-                        ) { index ->
-                            val person = characters[index]
-                            PersonListItem(
-                                name = person?.name ?: "",
-                                id = person?.id ?: 0,
-                                image = person?.image ?: "",
-                                onClick = { onCharacterSelected(person?.id ?: 0) }
-                            )
-                        }
-                        when (characters.loadState.append) {
-                            is LoadState.Loading -> item {
-                                Box(
-                                    Modifier.fillMaxWidth().padding(16.dp),
-                                    Alignment.Center
-                                ) { CircularProgressIndicator() }
+            // switch between search results and normal paged list
+            if (isSearching) {
+                SearchResultsView(
+                    searchState = searchState,
+                    onCharacterSelected = onCharacterSelected
+                )
+            } else {
+                when (uiState) {
+                    HomeUiState.Loading -> LoadingState(modifier = Modifier.fillMaxSize())
+                    is HomeUiState.Success -> {
+                        val characters = (uiState as HomeUiState.Success)
+                            .characters.collectAsLazyPagingItems()
+                        LazyColumn(modifier = Modifier.fillMaxSize()) {
+                            items(
+                                count = characters.itemCount,
+                                key = characters.itemKey { it.id }
+                            ) { index ->
+                                val person = characters[index]
+                                PersonListItem(
+                                    name = person?.name ?: "",
+                                    id = person?.id ?: 0,
+                                    image = person?.image ?: "",
+                                    onClick = { onCharacterSelected(person?.id ?: 0) }
+                                )
+                                HorizontalDivider(
+                                    color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.1f),
+                                    modifier = Modifier.padding(horizontal = 16.dp)
+                                )
                             }
-                            is LoadState.NotLoading -> {
-                                if (characters.loadState.append.endOfPaginationReached) {
-                                    item {
-                                        Text(
-                                            text = "No more characters",
-                                            modifier = Modifier.fillMaxWidth().padding(16.dp),
-                                            textAlign = TextAlign.Center,
-                                            style = MaterialTheme.typography.bodySmall,
-                                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                                        )
+                            when (characters.loadState.append) {
+                                is LoadState.Loading -> item {
+                                    Box(
+                                        Modifier.fillMaxWidth().padding(16.dp),
+                                        Alignment.Center
+                                    ) { CircularProgressIndicator() }
+                                }
+                                is LoadState.NotLoading -> {
+                                    if (characters.loadState.append.endOfPaginationReached) {
+                                        item {
+                                            Text(
+                                                text = "No more characters",
+                                                modifier = Modifier
+                                                    .fillMaxWidth()
+                                                    .padding(16.dp),
+                                                textAlign = TextAlign.Center,
+                                                style = MaterialTheme.typography.bodySmall,
+                                                color = MaterialTheme.colorScheme.onSurface
+                                            )
+                                        }
                                     }
                                 }
-                            }
-                            is LoadState.Error -> item {
-                                ErrorState(
-                                    message = "Failed to load more",
-                                    actionLabel = "Retry",
-                                    onRetry = { characters.retry() }
-                                )
+                                is LoadState.Error -> item {
+                                    ErrorState(
+                                        message = "Failed to load more",
+                                        actionLabel = "Retry",
+                                        onRetry = { characters.retry() }
+                                    )
+                                }
                             }
                         }
                     }
+                    is HomeUiState.Error -> ErrorState(
+                        message = (uiState as HomeUiState.Error).message,
+                        actionLabel = "Retry",
+                        onRetry = { viewModel.loadCharacters() },
+                        modifier = Modifier.fillMaxSize()
+                    )
                 }
-                is HomeUiState.Error -> ErrorState(
-                    message = (uiState as HomeUiState.Error).message,
-                    actionLabel = "Retry",
-                    onRetry = { viewModel.loadCharacters() },
-                    modifier = Modifier.fillMaxSize()
-                )
             }
         }
     }
@@ -288,12 +301,14 @@ fun FilterBottomSheet(
     onClear: () -> Unit,
     onDismiss: () -> Unit
 ) {
+    val scrollState = rememberScrollState()
+
     ModalBottomSheet(onDismissRequest = onDismiss) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 16.dp)
-                .navigationBarsPadding()
+                .navigationBarsPadding().verticalScroll(scrollState),
         ) {
             Row(
                 modifier = Modifier.fillMaxWidth(),

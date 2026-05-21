@@ -31,7 +31,7 @@ fun SplashScreen(onNext: () -> Unit) {
                     color = MaterialTheme.colorScheme.primary
                 )
                 Text(
-                    text = "A clean architecture demo for characters, comparison, and detail views.",
+                    text = "An app demo for characters, comparison, and detail views.",
                     style = MaterialTheme.typography.bodyLarge,
                     color = MaterialTheme.colorScheme.onBackground
                 )

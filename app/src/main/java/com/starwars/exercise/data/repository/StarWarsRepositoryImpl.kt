@@ -16,9 +16,12 @@ import com.starwars.exercise.data.mapper.toPersonImage
 import com.starwars.exercise.domain.model.Person
 import com.starwars.exercise.domain.model.PersonImage
 import com.starwars.exercise.domain.model.Planet
+import com.starwars.exercise.domain.model.SearchResult
 import com.starwars.exercise.domain.model.Species
 import com.starwars.exercise.domain.model.Starship
 import com.starwars.exercise.domain.repository.StarWarsRepository
+import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.flow
@@ -31,7 +34,6 @@ class StarWarsRepositoryImpl @Inject constructor(
     private val imageApi : StarWarsImageApi,
     private val personDao: PersonDao,
     private val starshipDao: StarshipDao,
-    private val planetDao: PlanetDao
 ) : StarWarsRepository {
     override fun getCharacters(searchQuery: String?): Flow<Resource<List<Person>>> {
         return flow {
@@ -61,14 +63,8 @@ class StarWarsRepositoryImpl @Inject constructor(
 
     override suspend fun getCharacterDetail(personId: Int): Resource<Person> {
         return try {
-            val cached = personDao.getPerson(personId)
-            if (cached != null) {
-                Log.d("StarWarsRepositoryImpl", "Loaded character images")
-                return Resource.Success(cached.toDomain())
-            }
             val response = api.getPerson(personId)
-            val entity = response.toEntity()
-            personDao.insertPeople(listOf(entity))
+            Log.d("getCharacterDetail", "raw birthYear=${response.birthYear}, name=${response.name}")
             Resource.Success(response.toDomain())
         } catch (error: Exception) {
             Resource.Error(error.localizedMessage ?: "Unable to load character details")
@@ -80,12 +76,54 @@ class StarWarsRepositoryImpl @Inject constructor(
             try {
                 emit(Resource.Loading)
                 val response = imageApi.getCharacterImage()
-                Log.d("StarWarsRepositoryImpl", "Loaded ${response.size} character images")
                 emit(Resource.Success(response.map { it.toPersonImage()}))
             } catch (error: Exception) {
-                Log.d("StarWarsRepositoryImpl", "Error loading images: ${error.localizedMessage}")
                 emit(Resource.Error(error.localizedMessage ?: "Unable to load images"))
             }
+        }
+    }
+
+    override suspend fun searchAll(query: String): Resource<List<SearchResult>> {
+        return try {
+            coroutineScope {
+                val peopleDeferred = async {
+                    try { api.getPeople(search = query).results.map { it.toDomain() } }
+                    catch (e: Exception) { emptyList() }
+                }
+                val shipsDeferred = async {
+                    try { api.getStarships(search = query).results.map { it.toDomain() } }
+                    catch (e: Exception) { emptyList() }
+                }
+                val planetsDeferred = async {
+                    try { api.getPlanets(search = query).results.map { it.toDomain() } }
+                    catch (e: Exception) { emptyList() }
+                }
+                val imagesDeferred = async {
+                    try { imageApi.getCharacterImage().associateBy { it.id } }
+                    catch (e: Exception) { emptyMap() }
+                }
+
+                val people = peopleDeferred.await()
+                val ships = shipsDeferred.await()
+                val planets = planetsDeferred.await()
+                val imageMap = imagesDeferred.await()
+
+                val results = mutableListOf<SearchResult>()
+
+                people.forEach { person ->
+                    results.add(
+                        SearchResult.CharacterResult(
+                            person.copy(image = imageMap[person.id.toString()]?.image ?: "")
+                        )
+                    )
+                }
+                ships.forEach { results.add(SearchResult.StarshipResult(it)) }
+                planets.forEach { results.add(SearchResult.PlanetResult(it)) }
+
+                Resource.Success(results)
+            }
+        } catch (e: Exception) {
+            Resource.Error(e.localizedMessage ?: "Search failed")
         }
     }
 
@@ -129,7 +167,7 @@ class StarWarsRepositoryImpl @Inject constructor(
             val allPlanets = mutableListOf<PlanetDto>()
             var page = 1
             while (true) {
-                val response = api.getPlanets(page)
+                val response = api.getPlanets(page = page)
                 allPlanets.addAll(response.results)
                 if (response.next == null) break
                 page++
@@ -141,9 +179,9 @@ class StarWarsRepositoryImpl @Inject constructor(
     }
 
 
-    override suspend fun getPlanet(id: Int): Resource<Planet> {
+    override suspend fun getPlanet(planetId: Int): Resource<Planet> {
         return try {
-            Resource.Success(api.getPlanet(id).toDomain())
+            Resource.Success(api.getPlanet(planetId).toDomain())
         } catch (e: Exception) {
             Resource.Error(e.localizedMessage ?: "Failed to load planet")
         }

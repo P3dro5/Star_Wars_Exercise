@@ -23,7 +23,9 @@ object DatabaseModule {
             context,
             StarWarsDatabase::class.java,
             "starwars_database"
-        ).fallbackToDestructiveMigration().build()
+        )
+            .fallbackToDestructiveMigration()  // wipes old cache on version bump
+            .build()
     }
 
     @Provides

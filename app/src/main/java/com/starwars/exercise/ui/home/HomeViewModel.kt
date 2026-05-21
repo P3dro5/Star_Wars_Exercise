@@ -7,6 +7,7 @@ import androidx.paging.cachedIn
 import androidx.paging.map
 import com.starwars.exercise.core.Resource
 import com.starwars.exercise.domain.model.CharacterFilter
+import com.starwars.exercise.domain.model.SearchResult
 import com.starwars.exercise.domain.model.SortField
 import com.starwars.exercise.domain.model.SortOrder
 import com.starwars.exercise.domain.model.Species
@@ -14,15 +15,20 @@ import com.starwars.exercise.domain.usecase.GetCharacterFirstAppearanceUseCase
 import com.starwars.exercise.domain.usecase.GetCharacterPagingUseCase
 import com.starwars.exercise.domain.usecase.GetCharactersImageUseCase
 import com.starwars.exercise.domain.usecase.GetSpeciesUseCase
+import com.starwars.exercise.domain.usecase.SearchAllUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.combineTransform
+import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onStart
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
@@ -31,7 +37,8 @@ class HomeViewModel @Inject constructor(
     private val getCharactersImageUseCase: GetCharactersImageUseCase,
     private val getCharacterPagingUseCase: GetCharacterPagingUseCase,
     private val getSpeciesUseCase: GetSpeciesUseCase,
-    private val getCharacterFirstAppearanceUseCase: GetCharacterFirstAppearanceUseCase
+    private val getCharacterFirstAppearanceUseCase: GetCharacterFirstAppearanceUseCase,
+    private val searchAllUseCase: SearchAllUseCase
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow<HomeUiState>(HomeUiState.Loading)
@@ -39,6 +46,13 @@ class HomeViewModel @Inject constructor(
 
     private val _searchQuery = MutableStateFlow("")
     val searchQuery: StateFlow<String> = _searchQuery
+
+    private val _searchState = MutableStateFlow<SearchUiState>(SearchUiState.Idle)
+    val searchState: StateFlow<SearchUiState> = _searchState
+
+    val isSearching: StateFlow<Boolean> = _searchQuery
+        .map { it.isNotBlank() }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
 
     private val _speciesUiState = MutableStateFlow<SpeciesUiState>(SpeciesUiState.Idle)
     val speciesUiState: StateFlow<SpeciesUiState> = _speciesUiState
@@ -50,10 +64,37 @@ class HomeViewModel @Inject constructor(
 
     init {
         viewModelScope.launch {
-            loadFilmData()   // wait for films first
-            loadCharacters() // then load characters with populated map
+            // debounce search by 400ms
+            _searchQuery
+                .debounce(400)
+                .collect { query ->
+                    if (query.isBlank()) {
+                        _searchState.value = SearchUiState.Idle
+                    } else {
+                        performSearch(query)
+                    }
+                }
         }
-        loadSpecies()        // species can load independently
+        viewModelScope.launch {
+            loadFilmData()
+            loadCharacters()
+        }
+        loadSpecies()
+    }
+
+    private suspend fun performSearch(query: String) {
+        _searchState.value = SearchUiState.Loading
+        _searchState.value = when (val result = searchAllUseCase(query)) {
+            is Resource.Success -> SearchUiState.Success(result.data)
+            is Resource.Error -> SearchUiState.Error(result.message)
+            else -> SearchUiState.Error("Unknown error")
+        }
+    }
+
+    fun onSearchQueryChanged(query: String) {
+        _searchQuery.value = query
+        // clear search state immediately when query is cleared
+        if (query.isBlank()) _searchState.value = SearchUiState.Idle
     }
 
     private suspend fun loadFilmData() {
@@ -97,11 +138,6 @@ class HomeViewModel @Inject constructor(
             .onStart { _uiState.value = HomeUiState.Loading }
             .catch { _uiState.value = HomeUiState.Error(it.localizedMessage ?: "Unknown error") }
             .launchIn(viewModelScope)
-    }
-
-    fun onSearchQueryChanged(query: String) {
-        _searchQuery.value = query
-        loadCharacters()
     }
 
     fun onSpeciesToggled(species: Species) {
@@ -159,4 +195,11 @@ sealed class SpeciesUiState {
     data object Loading : SpeciesUiState()
     data class Success(val species: List<Species>) : SpeciesUiState()
     data class Error(val message: String) : SpeciesUiState()
+}
+
+sealed class SearchUiState {
+    data object Idle : SearchUiState()
+    data object Loading : SearchUiState()
+    data class Success(val results: List<SearchResult>) : SearchUiState()
+    data class Error(val message: String) : SearchUiState()
 }

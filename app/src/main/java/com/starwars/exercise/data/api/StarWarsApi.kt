@@ -4,6 +4,7 @@ import com.starwars.exercise.data.api.dto.PeopleResponseDto
 import com.starwars.exercise.data.api.dto.PersonDto
 import com.starwars.exercise.data.api.dto.PlanetDto
 import com.starwars.exercise.data.api.dto.PlanetsResponseDto
+import com.starwars.exercise.data.api.dto.SpeciesDto
 import com.starwars.exercise.data.api.dto.SpeciesResponseDto
 import com.starwars.exercise.data.api.dto.StarshipDto
 import com.starwars.exercise.data.api.dto.StarshipResponseDto
@@ -34,8 +35,8 @@ interface StarWarsApi {
     @GET("planets/{id}/")
     suspend fun getPlanet(@Path("id") id: Int): PlanetDto
 
-    @GET("species/")
-    suspend fun getSpecies(): SpeciesResponseDto
+    @GET("species/{id}/")
+    suspend fun getSpeciesById(@Path("id") id: Int): SpeciesDto
 
     @GET("species/")
     suspend fun getSpeciesPage(
@@ -47,6 +48,7 @@ interface StarWarsApi {
 
     @GET("planets/")
     suspend fun getPlanets(
+        @Query("search") search: String? = null,
         @Query("page") page: Int = 1
     ): PlanetsResponseDto
 }

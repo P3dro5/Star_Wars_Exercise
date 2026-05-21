@@ -7,8 +7,8 @@ data class FilmsResponseDto(
 )
 
 data class FilmDto(
-    @Json(name = "release_date") val releaseDate: String,  // "1977-05-25"
-    val characters: List<String>  // ["https://swapi.info/api/people/1/", ...]
+    @Json(name = "release_date") val releaseDate: String,
+    val characters: List<String>
 )
 
 data class CharacterFirstAppearance(

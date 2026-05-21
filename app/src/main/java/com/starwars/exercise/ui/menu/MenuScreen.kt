@@ -95,7 +95,7 @@ fun MenuScreen(
             Spacer(modifier = Modifier.height(8.dp))
 
             Button(onClick = onCompare, modifier = Modifier.fillMaxWidth()) {
-                Text(text = "Compare heroes")
+                Text(text = "Compare characters")
             }
             Button(onClick = onGalaxyMap, modifier = Modifier.fillMaxWidth()) {
                 Text(text = "Galaxy Map")

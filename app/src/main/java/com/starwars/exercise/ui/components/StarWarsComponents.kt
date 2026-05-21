@@ -6,7 +6,6 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -18,32 +17,28 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
+import com.starwars.exercise.R
 
 @Composable
-fun SectionHeader(modifier: Modifier = Modifier, title: String, subtitle: String? = null) {
+fun SectionHeader(modifier: Modifier = Modifier, title: String) {
     Column(modifier = modifier.padding(horizontal = 16.dp, vertical = 12.dp)) {
         Text(
             text = title,
             style = MaterialTheme.typography.headlineSmall,
             color = MaterialTheme.colorScheme.onBackground
         )
-        subtitle?.let {
-            Spacer(modifier = Modifier.height(4.dp))
-            Text(
-                text = it,
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f)
-            )
-        }
     }
 }
 
 @Composable
-fun CharacterImage(name: String, characterId: Int, image: String) {
+fun CharacterImage(name: String, image: String) {
     AsyncImage(
         model = image,
+        placeholder = painterResource(R.drawable.darth_vader),
+        error = painterResource(R.drawable.darth_vader),
         contentDescription = name,
         contentScale = ContentScale.Crop,
         modifier = Modifier
@@ -69,7 +64,7 @@ fun PersonListItem(
         shape = RoundedCornerShape(16.dp)
     ) {
         Row(modifier = Modifier.padding(16.dp)) {
-                CharacterImage(name = name, characterId = id, image = image)
+                CharacterImage(name = name, image = image)
                 Spacer(modifier = Modifier.padding(start = 10.dp))
                 Text(
                     text = name,
