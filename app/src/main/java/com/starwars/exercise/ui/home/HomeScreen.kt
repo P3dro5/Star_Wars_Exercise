@@ -121,7 +121,6 @@ fun HomeScreen(
                 else SortOrder.ASCENDING
             } else SortOrder.ASCENDING
             viewModel.onSortChanged(SortField.NAME, newOrder)
-            viewModel.applyFilters()
         },
         onSortYearSelected = {
             val newOrder = if (filter.sortField == SortField.YEAR) {
@@ -129,7 +128,6 @@ fun HomeScreen(
                 else SortOrder.ASCENDING
             } else SortOrder.ASCENDING
             viewModel.onSortChanged(SortField.YEAR, newOrder)
-            viewModel.applyFilters()
         },
         onFilterSelected = {
             showFilterSheet = true
@@ -347,7 +345,7 @@ fun HomeScreenContent(
                     ) {
                         IconButton(onClick = {
                             onFilterSelected.invoke()
-                                             },  colors = IconButtonColors(contentColor = MaterialTheme.colorScheme.primary, containerColor = Color.Transparent, disabledContentColor = Color.Transparent, disabledContainerColor = Color.Transparent)) {
+                        },  colors = IconButtonColors(contentColor = MaterialTheme.colorScheme.primary, containerColor = Color.Transparent, disabledContentColor = Color.Transparent, disabledContainerColor = Color.Transparent)) {
                             Icon(Icons.AutoMirrored.Default.List, contentDescription = "Filters")
                         }
                     }
@@ -419,7 +417,7 @@ fun HomeScreenContent(
                         actionLabel = "Retry",
                         onRetry = {
                             onRetryCharacters.invoke()
-                                  },
+                        },
                         modifier = Modifier.fillMaxSize()
                     )
                 }

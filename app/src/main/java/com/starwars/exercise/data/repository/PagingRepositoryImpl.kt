@@ -80,6 +80,19 @@ class PagingRepositoryImpl @Inject constructor(
 
             people = people.filter { it.id in validIds }
 
+            // Apply sort
+            people = when (sortField) {
+                SortField.NAME -> if (sortOrder == SortOrder.ASCENDING)
+                    people.sortedBy { it.name }
+                else
+                    people.sortedByDescending { it.name }
+                SortField.YEAR -> if (sortOrder == SortOrder.ASCENDING)
+                    people.sortedBy { firstAppearanceMap[it.id] ?: Int.MAX_VALUE }
+                else
+                    people.sortedBy { firstAppearanceMap[it.id] ?: Int.MAX_VALUE }.reversed()
+                SortField.NONE -> people
+            }
+
             emitAll(
                 Pager(
                     config = PagingConfig(

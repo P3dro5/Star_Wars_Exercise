@@ -120,7 +120,7 @@ class HomeViewModel @Inject constructor(
         }
     }
 
-    fun loadCharacters() {
+    private fun loadCharacters() {
         val currentFilter = _filter.value
         val searchQuery = _searchQuery.value.ifBlank { null }
 
