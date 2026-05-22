@@ -1,5 +1,6 @@
 package com.starwars.exercise.ui.galaxy
 
+import android.graphics.Paint
 import android.graphics.PointF
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.gestures.detectTapGestures
@@ -15,7 +16,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
@@ -34,6 +34,7 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -44,6 +45,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -51,12 +53,13 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.davemorrissey.labs.subscaleview.ImageSource
 import com.davemorrissey.labs.subscaleview.SubsamplingScaleImageView
 import com.starwars.exercise.R
-import com.starwars.exercise.domain.model.GalaxyPosition
 import com.starwars.exercise.domain.model.Planet
 import com.starwars.exercise.ui.components.ErrorState
 import kotlin.math.pow
+import androidx.core.graphics.toColorInt
+import com.starwars.exercise.domain.model.GalaxyPosition
+import kotlin.math.sqrt
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun GalaxyMapScreen(
     onBack: () -> Unit,
@@ -65,6 +68,32 @@ fun GalaxyMapScreen(
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val selectedPlanet by viewModel.selectedPlanet.collectAsStateWithLifecycle()
 
+    GalaxyMapContent(
+        uiState = uiState,
+        selectedPlanet = selectedPlanet,
+        onBack = onBack,
+        onRetry = { viewModel.loadPlanets() },
+        onPlanetSelected = { viewModel.onPlanetSelected(it) },
+        onZoomIn = { viewModel.onZoomIn() },
+        onZoomOut = { viewModel.onZoomOut() },
+        onZoomReset = { viewModel.onZoomReset() },
+        onDismiss = { viewModel.onPlanetSelected(null) }
+    )
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun GalaxyMapContent(
+    uiState: GalaxyUiState,
+    selectedPlanet: Planet?,
+    onBack: () -> Unit,
+    onRetry: () -> Unit,
+    onPlanetSelected: (Planet?) -> Unit,
+    onZoomIn: () -> Unit,
+    onZoomOut: () -> Unit,
+    onZoomReset: () -> Unit,
+    onDismiss: () -> Unit
+) {
     Scaffold(
         topBar = {
             TopAppBar(
@@ -82,30 +111,30 @@ fun GalaxyMapScreen(
                 .fillMaxSize()
                 .padding(paddingValues)
         ) {
-            when (val state = uiState) {
+            when (uiState) {
                 is GalaxyUiState.Loading -> {
                     CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
                 }
                 is GalaxyUiState.Error -> {
                     ErrorState(
-                        message = state.message,
+                        message = uiState.message,
                         actionLabel = "Retry",
-                        onRetry = { viewModel.loadPlanets() },
+                        onRetry = { onRetry.invoke() },
                         modifier = Modifier.align(Alignment.Center)
                     )
                 }
                 is GalaxyUiState.Success -> {
                     GalaxyMap(
-                        planets = state.planets,
+                        planets = uiState.planets,
                         selectedPlanet = selectedPlanet,
-                        onPlanetSelected = { viewModel.onPlanetSelected(it) }
+                        onPlanetSelected = { onPlanetSelected.invoke(it) }
                     )
 
                     // zoom controls — bottom right
                     ZoomControls(
-                        onZoomIn = { viewModel.onZoomIn() },
-                        onZoomOut = { viewModel.onZoomOut() },
-                        onReset = { viewModel.onZoomReset() },
+                        onZoomIn = { onZoomIn.invoke() },
+                        onZoomOut = { onZoomOut.invoke() },
+                        onReset = { onZoomReset.invoke() },
                         modifier = Modifier
                             .align(Alignment.BottomEnd)
                             .padding(16.dp)
@@ -114,7 +143,7 @@ fun GalaxyMapScreen(
                     selectedPlanet?.let { planet ->
                         PlanetInfoCard(
                             planet = planet,
-                            onDismiss = { viewModel.onPlanetSelected(null) },
+                            onDismiss = { onDismiss.invoke() },
                             modifier = Modifier
                                 .align(Alignment.BottomCenter)
                                 .padding(start = 16.dp, end = 80.dp, bottom = 16.dp)
@@ -135,7 +164,7 @@ fun GalaxyMap(
 ) {
     var imageView by remember { mutableStateOf<SubsamplingScaleImageView?>(null) }
     var isReady by remember { mutableStateOf(false) }
-    var stateVersion by remember { mutableStateOf(0) }
+    var stateVersion by remember { mutableIntStateOf(0) }
 
     // consume zoom commands from ViewModel
     LaunchedEffect(Unit) {
@@ -189,7 +218,6 @@ fun GalaxyMap(
         )
 
         if (isReady) {
-            val state = stateVersion
             Canvas(
                 modifier = Modifier
                     .fillMaxSize()
@@ -201,7 +229,7 @@ fun GalaxyMap(
                                 val imageY = planet.galaxyPosition.y * iv.sHeight
                                 val screenPoint = iv.sourceToViewCoord(imageX, imageY)
                                     ?: return@firstOrNull false
-                                val distance = kotlin.math.sqrt(
+                                val distance = sqrt(
                                     (tapOffset.x - screenPoint.x).pow(2) +
                                             (tapOffset.y - screenPoint.y).pow(2)
                                 )
@@ -237,10 +265,10 @@ fun GalaxyMap(
                         planet.name,
                         screenPoint.x + 16f,
                         screenPoint.y + 5f,
-                        android.graphics.Paint().apply {
+                        Paint().apply {
                             textSize = if (isSelected) 32f else 24f
                             color = if (isSelected)
-                                android.graphics.Color.parseColor("#FFD700")
+                                "#FFD700".toColorInt()
                             else
                                 android.graphics.Color.WHITE
                             setShadowLayer(4f, 0f, 0f, android.graphics.Color.BLACK)
@@ -251,19 +279,6 @@ fun GalaxyMap(
             }
         }
     }
-}
-
-// converts galaxy relative position (0f..1f) to screen pixel coordinates
-private fun GalaxyPosition.toScreenCoords(
-    viewW: Float, viewH: Float,
-    imageW: Float, imageH: Float,
-    scale: Float, centerX: Float, centerY: Float
-): Pair<Float, Float> {
-    val imageX = x * imageW
-    val imageY = y * imageH
-    val screenX = (imageX - centerX) * scale + viewW / 2f
-    val screenY = (imageY - centerY) * scale + viewH / 2f
-    return Pair(screenX, screenY)
 }
 
 @Composable
@@ -378,4 +393,32 @@ fun ZoomControls(
 private fun SubsamplingScaleImageView.animatingScale(targetScale: Float) {
     val center = center ?: return
     animateScaleAndCenter(targetScale, center)?.start()
+}
+
+@Preview(showBackground = true, name = "Galaxy Map")
+@Composable
+fun GalaxyMapPreview() {
+    GalaxyMapContent(
+        uiState = GalaxyUiState.Success(listOf(
+            Planet(
+                id = 1, name = "Tatooine", galaxyPosition = GalaxyPosition(0.72f, 0.78f),
+                climate = "",
+                terrain = "",
+                population = "",
+                gravity = "",
+                diameter = "",
+                orbitalPeriod = "",
+                rotationPeriod = "",
+                residentIds = listOf(1)
+            )
+        )),
+        selectedPlanet = null,
+        onBack = {},
+        onRetry = {},
+        onPlanetSelected = {},
+        onZoomIn = {},
+        onZoomOut = {},
+        onZoomReset = {},
+        onDismiss = {}
+    )
 }

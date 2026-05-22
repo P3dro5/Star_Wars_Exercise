@@ -1,4 +1,4 @@
-package com.starwars.exercise.config
+package com.starwars.exercise.data.config
 
 import com.starwars.exercise.domain.model.GalaxyPosition
 

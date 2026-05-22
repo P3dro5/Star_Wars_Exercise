@@ -2,7 +2,7 @@ package com.starwars.exercise.ui.detail
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.starwars.exercise.core.Resource
+import com.starwars.exercise.data.core.Resource
 import com.starwars.exercise.domain.repository.StarWarsRepository
 import com.starwars.exercise.domain.usecase.GetCharacterDetailUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -26,7 +26,7 @@ class DetailViewModel @Inject constructor(
             when (val resource = getCharacterDetailUseCase(personId)) {
                 is Resource.Loading -> _uiState.value = DetailUiState.Loading
                 is Resource.Error -> _uiState.value = DetailUiState.Error(
-                    resource.message ?: "Unable to load detail"
+                    resource.message
                 )
                 is Resource.Success -> {
                     val person = resource.data

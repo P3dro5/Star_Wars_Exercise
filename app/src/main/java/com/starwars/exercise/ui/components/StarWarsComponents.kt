@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardColors
@@ -20,9 +21,11 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import com.starwars.exercise.R
+import com.starwars.exercise.ui.theme.StarWarsTheme
 
 @Composable
 fun SectionHeader(modifier: Modifier = Modifier, title: String) {
@@ -45,7 +48,7 @@ fun CharacterImage(name: String, image: String) {
         contentScale = ContentScale.Crop,
         modifier = Modifier
             .size(80.dp)
-            .clip(RoundedCornerShape(8.dp))
+            .clip(CircleShape),
     )
 }
 
@@ -76,5 +79,33 @@ fun PersonListItem(
                     color = MaterialTheme.colorScheme.onSurface
                 )
             }
+    }
+}
+
+@Preview(showBackground = true, name = "Person List Item")
+@Composable
+fun PersonListItemPreview() {
+    StarWarsTheme {
+        PersonListItem(
+            name = "Luke Skywalker",
+            image = "",
+            onClick = {}
+        )
+    }
+}
+
+@Preview(showBackground = true, name = "Section Header")
+@Composable
+fun SectionHeaderPreview() {
+    StarWarsTheme {
+        SectionHeader(title = "Section Title")
+    }
+}
+
+@Preview(showBackground = true, name = "Character Image")
+@Composable
+fun CharacterImagePreview() {
+    StarWarsTheme {
+        CharacterImage(name = "Luke Skywalker", image = "")
     }
 }

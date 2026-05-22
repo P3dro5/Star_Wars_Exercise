@@ -1,4 +1,4 @@
-package com.starwars.exercise
+package com.starwars.exercise.data.di
 
 import android.app.Application
 import dagger.hilt.android.HiltAndroidApp

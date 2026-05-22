@@ -1,6 +1,6 @@
-package com.starwars.exercise.di
+package com.starwars.exercise.data.di
 
-import com.starwars.exercise.config.AppConfig
+import com.starwars.exercise.data.config.AppConfig
 import com.starwars.exercise.data.api.StarWarsApi
 import com.squareup.moshi.Moshi
 import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory

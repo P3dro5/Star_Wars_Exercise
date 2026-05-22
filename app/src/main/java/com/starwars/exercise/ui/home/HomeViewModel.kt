@@ -5,7 +5,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.paging.cachedIn
 import androidx.paging.map
-import com.starwars.exercise.core.Resource
+import com.starwars.exercise.data.core.Resource
 import com.starwars.exercise.domain.model.CharacterFilter
 import com.starwars.exercise.domain.model.SearchResult
 import com.starwars.exercise.domain.model.SortField
@@ -17,6 +17,7 @@ import com.starwars.exercise.domain.usecase.GetCharactersImageUseCase
 import com.starwars.exercise.domain.usecase.GetSpeciesUseCase
 import com.starwars.exercise.domain.usecase.SearchAllUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.FlowPreview
 import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -32,6 +33,7 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
+@OptIn(FlowPreview::class)
 @HiltViewModel
 class HomeViewModel @Inject constructor(
     private val getCharactersImageUseCase: GetCharactersImageUseCase,

@@ -1,17 +1,10 @@
 package com.starwars.exercise.data.repository
 
-import android.util.Log
-import com.starwars.exercise.core.Resource
+import com.starwars.exercise.data.core.Resource
 import com.starwars.exercise.data.api.StarWarsApi
 import com.starwars.exercise.data.api.StarWarsImageApi
-import com.starwars.exercise.data.api.dto.PlanetDto
-import com.starwars.exercise.data.api.dto.SpeciesDto
-import com.starwars.exercise.data.cache.PersonDao
-import com.starwars.exercise.data.cache.PlanetDao
-import com.starwars.exercise.data.cache.StarshipDao
 import com.starwars.exercise.data.mapper.toCharacterAppearances
 import com.starwars.exercise.data.mapper.toDomain
-import com.starwars.exercise.data.mapper.toEntity
 import com.starwars.exercise.data.mapper.toPersonImage
 import com.starwars.exercise.domain.model.Person
 import com.starwars.exercise.domain.model.PersonImage
@@ -20,11 +13,8 @@ import com.starwars.exercise.domain.model.SearchResult
 import com.starwars.exercise.domain.model.Species
 import com.starwars.exercise.domain.model.Starship
 import com.starwars.exercise.domain.repository.StarWarsRepository
-import kotlinx.coroutines.async
-import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.catch
-import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.flow
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -101,20 +91,19 @@ class StarWarsRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun getPlanet(id: Int): Resource<Planet> {
+    override suspend fun getPlanet(planetId: Int): Resource<Planet> {
         return try {
-            Resource.Success(api.getPlanet(id).toDomain())
+            Resource.Success(api.getPlanet(planetId).toDomain())
         } catch (e: Exception) {
             Resource.Error(e.localizedMessage ?: "Failed to load planet")
         }
     }
 
     override suspend fun getAllSpecies(): Resource<List<Species>> {
-        try {
-            val allSpecies = api.getSpecies().map { it.toDomain() }
-            return Resource.Success(api.getSpecies().map { it.toDomain() })
+        return try {
+            Resource.Success(api.getSpecies().map { it.toDomain() })
         } catch (e: Exception) {
-           return Resource.Error(e.localizedMessage ?: "Failed to load species")
+            Resource.Error(e.localizedMessage ?: "Failed to load species")
         }
     }
 

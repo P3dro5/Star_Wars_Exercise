@@ -11,8 +11,4 @@ data class CharacterFilter(
     val selectedGenders: Set<String> = emptySet(),
     val sortField: SortField = SortField.NONE,
     val sortOrder: SortOrder = SortOrder.ASCENDING
-) {
-    val isActive: Boolean get() = selectedSpecies.isNotEmpty() ||
-            selectedGenders.isNotEmpty() ||
-            sortField != SortField.NONE
-}
+)

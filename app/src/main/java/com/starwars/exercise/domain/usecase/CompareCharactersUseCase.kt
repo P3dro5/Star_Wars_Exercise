@@ -1,6 +1,6 @@
 package com.starwars.exercise.domain.usecase
 
-import com.starwars.exercise.core.Resource
+import com.starwars.exercise.data.core.Resource
 import com.starwars.exercise.domain.model.Person
 import com.starwars.exercise.domain.model.PersonImage
 import com.starwars.exercise.domain.repository.StarWarsRepository

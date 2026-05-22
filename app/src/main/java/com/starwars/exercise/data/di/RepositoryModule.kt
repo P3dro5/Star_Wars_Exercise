@@ -1,4 +1,4 @@
-package com.starwars.exercise.di
+package com.starwars.exercise.data.di
 
 
 import com.starwars.exercise.data.repository.PagingRepositoryImpl

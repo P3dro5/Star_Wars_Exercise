@@ -50,6 +50,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.starwars.exercise.ui.components.ErrorState
 import com.starwars.exercise.ui.components.LoadingState
@@ -60,12 +61,16 @@ import androidx.paging.LoadState
 import androidx.paging.compose.collectAsLazyPagingItems
 import androidx.paging.compose.itemKey
 import com.starwars.exercise.domain.model.CharacterFilter
+import com.starwars.exercise.domain.model.Person
+import com.starwars.exercise.domain.model.Planet
+import com.starwars.exercise.domain.model.SearchResult
 import com.starwars.exercise.domain.model.SortField
 import com.starwars.exercise.domain.model.SortOrder
 import com.starwars.exercise.domain.model.Species
+import com.starwars.exercise.domain.model.Starship
 import com.starwars.exercise.domain.model.availableGenders
+import com.starwars.exercise.ui.theme.StarWarsTheme
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(
     onMenu: () -> Unit,
@@ -89,7 +94,6 @@ fun HomeScreen(
             currentFilter = filter,
             onSpeciesToggled = { viewModel.onSpeciesToggled(it) },
             onGenderToggled = { viewModel.onGenderToggled(it) },
-            onSortChanged = { field, order -> viewModel.onSortChanged(field, order) },
             onApply = {
                 viewModel.applyFilters()
                 showFilterSheet = false
@@ -102,170 +106,40 @@ fun HomeScreen(
         )
     }
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = {
-                    TextField(
-                        value = searchQuery,
-                        onValueChange = { viewModel.onSearchQueryChanged(it) },
-                        placeholder = { Text("Search...") },
-                        singleLine = true,
-                        colors = TextFieldDefaults.colors(
-                            focusedContainerColor = Color.Transparent,
-                            unfocusedContainerColor = Color.Transparent,
-                            focusedIndicatorColor = Color.Transparent,
-                            unfocusedIndicatorColor = Color.Transparent
-                        ),
-                        trailingIcon = {
-                            if (searchQuery.isNotBlank()) {
-                                IconButton(onClick = { viewModel.onSearchQueryChanged("") }) {
-                                    Icon(Icons.Default.Clear, contentDescription = "Clear")
-                                }
-                            }
-                        }
-                    )
-                },
-                navigationIcon = {
-                    IconButton(onClick = onMenu, colors = IconButtonColors(contentColor = MaterialTheme.colorScheme.primary, containerColor = Color.Transparent, disabledContentColor = Color.Transparent, disabledContainerColor = Color.Transparent)) {
-                        Icon(Icons.Default.Menu, contentDescription = "Menu")
-                    }
-                },
-                actions = {
-                    IconButton(onClick = { onGalaxyMap.invoke() },  colors = IconButtonColors(contentColor = MaterialTheme.colorScheme.primary, containerColor = Color.Transparent, disabledContentColor = Color.Transparent, disabledContainerColor = Color.Transparent)) {
-                        Icon(Icons.Default.LocationOn, contentDescription = "Galaxy Map")
-                    }
-                    IconButton(onClick = { onCompareCharacters.invoke() } , colors = IconButtonColors(contentColor = MaterialTheme.colorScheme.primary, containerColor = Color.Transparent, disabledContentColor = Color.Transparent, disabledContainerColor = Color.Transparent)) {
-                        Icon(Icons.Default.PlayArrow, contentDescription = "Compare")
-                    }
-                }
-            )
-        }
-    ) { paddingValues ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues)
-        ) {
-            // hide sort/filter row when searching
-            if (!isSearching) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 16.dp, vertical = 4.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    SortChip(
-                        label = "Name",
-                        isSelected = filter.sortField == SortField.NAME,
-                        sortOrder = filter.sortOrder,
-                        onClick = {
-                            val newOrder = if (filter.sortField == SortField.NAME) {
-                                if (filter.sortOrder == SortOrder.ASCENDING) SortOrder.DESCENDING
-                                else SortOrder.ASCENDING
-                            } else SortOrder.ASCENDING
-                            viewModel.onSortChanged(SortField.NAME, newOrder)
-                            viewModel.applyFilters()
-                        }
-                    )
-                    SortChip(
-                        label = "Year",
-                        isSelected = filter.sortField == SortField.YEAR,
-                        sortOrder = filter.sortOrder,
-                        onClick = {
-                            val newOrder = if (filter.sortField == SortField.YEAR) {
-                                if (filter.sortOrder == SortOrder.ASCENDING) SortOrder.DESCENDING
-                                else SortOrder.ASCENDING
-                            } else SortOrder.ASCENDING
-                            viewModel.onSortChanged(SortField.YEAR, newOrder)
-                            viewModel.applyFilters()
-                        }
-                    )
-                    Spacer(modifier = Modifier.weight(1f))
-                    BadgedBox(
-                        badge = {
-                            val count = filter.selectedSpecies.size + filter.selectedGenders.size
-                            if (count > 0) Badge { Text("$count") }
-                        }
-                    ) {
-                        IconButton(onClick = { showFilterSheet = true },  colors = IconButtonColors(contentColor = MaterialTheme.colorScheme.primary, containerColor = Color.Transparent, disabledContentColor = Color.Transparent, disabledContainerColor = Color.Transparent)) {
-                            Icon(Icons.AutoMirrored.Default.List, contentDescription = "Filters")
-                        }
-                    }
-                }
-            }
+    HomeScreenContent(
+        uiState = uiState,
+        searchQuery = searchQuery,
+        searchState = searchState,
+        isSearching = isSearching,
+        filter = filter,
+        onSearchValueChanged = { viewModel.onSearchQueryChanged(it) },
+        onMenu = { onMenu.invoke() },
+        onCharacterSelected = { onCharacterSelected.invoke(it) },
+        onSortNameSelected = {
+            val newOrder = if (filter.sortField == SortField.NAME) {
+                if (filter.sortOrder == SortOrder.ASCENDING) SortOrder.DESCENDING
+                else SortOrder.ASCENDING
+            } else SortOrder.ASCENDING
+            viewModel.onSortChanged(SortField.NAME, newOrder)
+            viewModel.applyFilters()
+        },
+        onSortYearSelected = {
+            val newOrder = if (filter.sortField == SortField.YEAR) {
+                if (filter.sortOrder == SortOrder.ASCENDING) SortOrder.DESCENDING
+                else SortOrder.ASCENDING
+            } else SortOrder.ASCENDING
+            viewModel.onSortChanged(SortField.YEAR, newOrder)
+            viewModel.applyFilters()
+        },
+        onFilterSelected = {
+            showFilterSheet = true
+        },
+        onRetryCharacters = { viewModel.loadCharacters() },
+        onGalaxyMap = { onGalaxyMap.invoke() },
+        onCompareCharacters = { onCompareCharacters.invoke() }
 
-            // switch between search results and normal paged list
-            if (isSearching) {
-                SearchResultsView(
-                    searchState = searchState,
-                    onCharacterSelected = onCharacterSelected
-                )
-            } else {
-                when (uiState) {
-                    HomeUiState.Loading -> LoadingState(modifier = Modifier.fillMaxSize())
-                    is HomeUiState.Success -> {
-                        val characters = (uiState as HomeUiState.Success)
-                            .characters.collectAsLazyPagingItems()
-                        LazyColumn(modifier = Modifier.fillMaxSize()) {
-                            items(
-                                count = characters.itemCount,
-                                key = characters.itemKey { it.id }
-                            ) { index ->
-                                val person = characters[index]
-                                PersonListItem(
-                                    name = person?.name ?: "",
-                                    image = person?.image ?: "",
-                                    onClick = { onCharacterSelected(person?.id ?: 0) }
-                                )
-                                HorizontalDivider(
-                                    color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.1f),
-                                    modifier = Modifier.padding(horizontal = 16.dp)
-                                )
-                            }
-                            when (characters.loadState.append) {
-                                is LoadState.Loading -> item {
-                                    Box(
-                                        Modifier.fillMaxWidth().padding(16.dp),
-                                        Alignment.Center
-                                    ) { CircularProgressIndicator() }
-                                }
-                                is LoadState.NotLoading -> {
-                                    if (characters.loadState.append.endOfPaginationReached) {
-                                        item {
-                                            Text(
-                                                text = "No more characters",
-                                                modifier = Modifier
-                                                    .fillMaxWidth()
-                                                    .padding(16.dp),
-                                                textAlign = TextAlign.Center,
-                                                style = MaterialTheme.typography.bodySmall,
-                                                color = MaterialTheme.colorScheme.onSurface
-                                            )
-                                        }
-                                    }
-                                }
-                                is LoadState.Error -> item {
-                                    ErrorState(
-                                        message = "Failed to load more",
-                                        actionLabel = "Retry",
-                                        onRetry = { characters.retry() }
-                                    )
-                                }
-                            }
-                        }
-                    }
-                    is HomeUiState.Error -> ErrorState(
-                        message = (uiState as HomeUiState.Error).message,
-                        actionLabel = "Retry",
-                        onRetry = { viewModel.loadCharacters() },
-                        modifier = Modifier.fillMaxSize()
-                    )
-                }
-            }
-        }
-    }
+    )
+
 }
 
 @Composable
@@ -301,7 +175,6 @@ fun FilterBottomSheet(
     currentFilter: CharacterFilter,
     onSpeciesToggled: (Species) -> Unit,
     onGenderToggled: (String) -> Unit,
-    onSortChanged: (SortField, SortOrder) -> Unit,
     onApply: () -> Unit,
     onClear: () -> Unit,
     onDismiss: () -> Unit
@@ -373,5 +246,401 @@ fun FilterBottomSheet(
 
             Spacer(modifier = Modifier.height(16.dp))
         }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun HomeScreenContent(
+    uiState: HomeUiState,
+    searchQuery: String,
+    searchState: SearchUiState,
+    isSearching: Boolean,
+    filter: CharacterFilter,
+    onSearchValueChanged: (String) -> Unit,
+    onMenu: () -> Unit,
+    onCharacterSelected: (Int) -> Unit,
+    onSortNameSelected: () -> Unit,
+    onSortYearSelected: () -> Unit,
+    onFilterSelected: () -> Unit,
+    onRetryCharacters: () -> Unit,
+    onGalaxyMap: () -> Unit,
+    onCompareCharacters: () -> Unit,
+)
+{
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = {
+                    TextField(
+                        value = searchQuery,
+                        onValueChange = { onSearchValueChanged.invoke(it) },
+                        placeholder = { Text("Search...") },
+                        singleLine = true,
+                        colors = TextFieldDefaults.colors(
+                            focusedContainerColor = Color.Transparent,
+                            unfocusedContainerColor = Color.Transparent,
+                            focusedIndicatorColor = Color.Transparent,
+                            unfocusedIndicatorColor = Color.Transparent
+                        ),
+                        trailingIcon = {
+                            if (searchQuery.isNotBlank()) {
+                                IconButton(onClick = { onSearchValueChanged.invoke("") }) {
+                                    Icon(Icons.Default.Clear, contentDescription = "Clear")
+                                }
+                            }
+                        }
+                    )
+                },
+                navigationIcon = {
+                    IconButton(onClick = onMenu, colors = IconButtonColors(contentColor = MaterialTheme.colorScheme.primary, containerColor = Color.Transparent, disabledContentColor = Color.Transparent, disabledContainerColor = Color.Transparent)) {
+                        Icon(Icons.Default.Menu, contentDescription = "Menu")
+                    }
+                },
+                actions = {
+                    IconButton(onClick = { onGalaxyMap.invoke() },  colors = IconButtonColors(contentColor = MaterialTheme.colorScheme.primary, containerColor = Color.Transparent, disabledContentColor = Color.Transparent, disabledContainerColor = Color.Transparent)) {
+                        Icon(Icons.Default.LocationOn, contentDescription = "Galaxy Map")
+                    }
+                    IconButton(onClick = { onCompareCharacters.invoke() } , colors = IconButtonColors(contentColor = MaterialTheme.colorScheme.primary, containerColor = Color.Transparent, disabledContentColor = Color.Transparent, disabledContainerColor = Color.Transparent)) {
+                        Icon(Icons.Default.PlayArrow, contentDescription = "Compare")
+                    }
+                }
+            )
+        }
+    ) { paddingValues ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(paddingValues)
+        ) {
+            // hide sort/filter row when searching
+            if (!isSearching) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 4.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    SortChip(
+                        label = "Name",
+                        isSelected = filter.sortField == SortField.NAME,
+                        sortOrder = filter.sortOrder,
+                        onClick = {
+                            onSortNameSelected.invoke()
+                        }
+                    )
+                    SortChip(
+                        label = "Year",
+                        isSelected = filter.sortField == SortField.YEAR,
+                        sortOrder = filter.sortOrder,
+                        onClick = {
+                            onSortYearSelected.invoke()
+                        }
+                    )
+                    Spacer(modifier = Modifier.weight(1f))
+                    BadgedBox(
+                        badge = {
+                            val count = filter.selectedSpecies.size + filter.selectedGenders.size
+                            if (count > 0) Badge { Text("$count") }
+                        }
+                    ) {
+                        IconButton(onClick = {
+                            onFilterSelected.invoke()
+                                             },  colors = IconButtonColors(contentColor = MaterialTheme.colorScheme.primary, containerColor = Color.Transparent, disabledContentColor = Color.Transparent, disabledContainerColor = Color.Transparent)) {
+                            Icon(Icons.AutoMirrored.Default.List, contentDescription = "Filters")
+                        }
+                    }
+                }
+            }
+
+            // switch between search results and normal paged list
+            if (isSearching) {
+                SearchResultsView(
+                    searchState = searchState,
+                    onCharacterSelected = onCharacterSelected
+                )
+            } else {
+                when (uiState) {
+                    HomeUiState.Loading -> LoadingState(modifier = Modifier.fillMaxSize())
+                    is HomeUiState.Success -> {
+                        val characters = uiState
+                            .characters.collectAsLazyPagingItems()
+                        LazyColumn(modifier = Modifier.fillMaxSize()) {
+                            items(
+                                count = characters.itemCount,
+                                key = characters.itemKey { it.id }
+                            ) { index ->
+                                val person = characters[index]
+                                PersonListItem(
+                                    name = person?.name ?: "",
+                                    image = person?.image ?: "",
+                                    onClick = { onCharacterSelected.invoke(person?.id ?: 0) }
+                                )
+                                HorizontalDivider(
+                                    color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.1f),
+                                    modifier = Modifier.padding(horizontal = 16.dp)
+                                )
+                            }
+                            when (characters.loadState.append) {
+                                is LoadState.Loading -> item {
+                                    Box(
+                                        Modifier.fillMaxWidth().padding(16.dp),
+                                        Alignment.Center
+                                    ) { CircularProgressIndicator() }
+                                }
+                                is LoadState.NotLoading -> {
+                                    if (characters.loadState.append.endOfPaginationReached) {
+                                        item {
+                                            Text(
+                                                text = "No more characters",
+                                                modifier = Modifier
+                                                    .fillMaxWidth()
+                                                    .padding(16.dp),
+                                                textAlign = TextAlign.Center,
+                                                style = MaterialTheme.typography.bodySmall,
+                                                color = MaterialTheme.colorScheme.onSurface
+                                            )
+                                        }
+                                    }
+                                }
+                                is LoadState.Error -> item {
+                                    ErrorState(
+                                        message = "Failed to load more",
+                                        actionLabel = "Retry",
+                                        onRetry = { characters.retry() }
+                                    )
+                                }
+                            }
+                        }
+                    }
+                    is HomeUiState.Error -> ErrorState(
+                        message = uiState.message,
+                        actionLabel = "Retry",
+                        onRetry = {
+                            onRetryCharacters.invoke()
+                                  },
+                        modifier = Modifier.fillMaxSize()
+                    )
+                }
+            }
+        }
+    }
+}
+
+private val fakePerson = Person(
+    id = 1,
+    name = "Luke Skywalker",
+    image = "",
+    birthYear = "19BBY",
+    gender = "male",
+    homeworld = "Tatooine",
+    species = "Human",
+    height = "172",
+    mass = "77",
+    hairColor = "blond",
+    skinColor = "fair",
+    eyeColor = "blue",
+    filmCount = 4,
+    starshipIds = listOf(12, 22)
+)
+
+@Preview(showBackground = true, name = "Home Light Mode - Loading")
+@Composable
+fun HomeScreenLoadingLightPreview() {
+    StarWarsTheme(darkTheme = false) {
+        HomeScreenContent(
+            uiState = HomeUiState.Loading,
+            searchQuery = "",
+            searchState = SearchUiState.Idle,
+            isSearching = false,
+            filter = CharacterFilter(),
+            onSearchValueChanged = {},
+            onMenu = {},
+            onCharacterSelected = {},
+            onSortNameSelected = {},
+            onSortYearSelected = {},
+            onFilterSelected = {},
+            onRetryCharacters = {},
+            onGalaxyMap = {},
+            onCompareCharacters = {}
+        )
+    }
+}
+
+@Preview(showBackground = true, name = "Home Dark Mode - Loading")
+@Composable
+fun HomeScreenLoadingDarkPreview() {
+    StarWarsTheme(darkTheme = true) {
+        HomeScreenContent(
+            uiState = HomeUiState.Loading,
+            searchQuery = "",
+            searchState = SearchUiState.Idle,
+            isSearching = false,
+            filter = CharacterFilter(),
+            onSearchValueChanged = {},
+            onMenu = {},
+            onCharacterSelected = {},
+            onSortNameSelected = {},
+            onSortYearSelected = {},
+            onFilterSelected = {},
+            onRetryCharacters = {},
+            onGalaxyMap = {},
+            onCompareCharacters = {}
+        )
+    }
+}
+
+@Preview(showBackground = true, name = "Home Light Mode - Error")
+@Composable
+fun HomeScreenErrorLightPreview() {
+    StarWarsTheme(darkTheme = false) {
+        HomeScreenContent(
+            uiState = HomeUiState.Error("Failed to load characters"),
+            searchQuery = "",
+            searchState = SearchUiState.Idle,
+            isSearching = false,
+            filter = CharacterFilter(),
+            onSearchValueChanged = {},
+            onMenu = {},
+            onCharacterSelected = {},
+            onSortNameSelected = {},
+            onSortYearSelected = {},
+            onFilterSelected = {},
+            onRetryCharacters = {},
+            onGalaxyMap = {},
+            onCompareCharacters = {}
+        )
+    }
+}
+
+@Preview(showBackground = true, name = "Home Dark Mode - Error")
+@Composable
+fun HomeScreenErrorDarkPreview() {
+    StarWarsTheme(darkTheme = true) {
+        HomeScreenContent(
+            uiState = HomeUiState.Error("Failed to load characters"),
+            searchQuery = "",
+            searchState = SearchUiState.Idle,
+            isSearching = false,
+            filter = CharacterFilter(),
+            onSearchValueChanged = {},
+            onMenu = {},
+            onCharacterSelected = {},
+            onSortNameSelected = {},
+            onSortYearSelected = {},
+            onFilterSelected = {},
+            onRetryCharacters = {},
+            onGalaxyMap = {},
+            onCompareCharacters = {}
+        )
+    }
+}
+
+
+@Preview(showBackground = true, name = "Home Light Mode - Search Results")
+@Composable
+fun HomeScreenSearchPreview() {
+    StarWarsTheme(darkTheme = false) {
+        HomeScreenContent(
+            uiState = HomeUiState.Loading,
+            searchQuery = "Luke",
+            searchState = SearchUiState.Success(
+                listOf(
+                    SearchResult.CharacterResult(fakePerson),
+                    SearchResult.StarshipResult(
+                        Starship(1, "X-Wing", "T-65", "Incom", "Starfighter", "1", "0", "149999", "12.5")
+                    ),
+                    SearchResult.PlanetResult(
+                        Planet(1, "Tatooine", "arid", "desert", "200000", "1 standard", "10465", "304", "23", emptyList())
+                    )
+                )
+            ),
+            isSearching = true,
+            filter = CharacterFilter(),
+            onMenu = {},
+            onSearchValueChanged = {},
+            onCharacterSelected = {},
+            onSortNameSelected = {},
+            onSortYearSelected = {},
+            onFilterSelected = {},
+            onRetryCharacters = {},
+            onGalaxyMap = {},
+            onCompareCharacters = {}
+        )
+    }
+}
+
+@Preview(showBackground = true, name = "Home Dark Mode- Search Results")
+@Composable
+fun HomeScreenSearchDarkPreview() {
+    StarWarsTheme(darkTheme = true) {
+        HomeScreenContent(
+            uiState = HomeUiState.Loading,
+            searchQuery = "Luke",
+            searchState = SearchUiState.Success(
+                listOf(
+                    SearchResult.CharacterResult(fakePerson),
+                    SearchResult.StarshipResult(
+                        Starship(1, "X-Wing", "T-65", "Incom", "Starfighter", "1", "0", "149999", "12.5")
+                    ),
+                    SearchResult.PlanetResult(
+                        Planet(1, "Tatooine", "arid", "desert", "200000", "1 standard", "10465", "304", "23", emptyList())
+                    )
+                )
+            ),
+            isSearching = true,
+            filter = CharacterFilter(),
+            onMenu = {},
+            onSearchValueChanged = {},
+            onCharacterSelected = {},
+            onSortNameSelected = {},
+            onSortYearSelected = {},
+            onFilterSelected = {},
+            onRetryCharacters = {},
+            onGalaxyMap = {},
+            onCompareCharacters = {}
+        )
+    }
+}
+
+
+
+@Preview(showBackground = true, name = "Sort Chip - Unselected")
+@Composable
+fun SortChipUnselectedPreview() {
+    StarWarsTheme {
+        SortChip(
+            label = "Name",
+            isSelected = false,
+            sortOrder = SortOrder.ASCENDING,
+            onClick = {}
+        )
+    }
+}
+
+@Preview(showBackground = true, name = "Sort Chip - Ascending")
+@Composable
+fun SortChipAscendingPreview() {
+    StarWarsTheme {
+        SortChip(
+            label = "Name",
+            isSelected = true,
+            sortOrder = SortOrder.ASCENDING,
+            onClick = {}
+        )
+    }
+}
+
+@Preview(showBackground = true, name = "Sort Chip - Descending")
+@Composable
+fun SortChipDescendingPreview() {
+    StarWarsTheme {
+        SortChip(
+            label = "Year",
+            isSelected = true,
+            sortOrder = SortOrder.DESCENDING,
+            onClick = {}
+        )
     }
 }

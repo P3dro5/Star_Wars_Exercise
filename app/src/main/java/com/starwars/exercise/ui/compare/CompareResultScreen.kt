@@ -11,7 +11,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -22,6 +22,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -31,16 +32,17 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImage
 import com.starwars.exercise.R
-import com.starwars.exercise.core.Resource
+import com.starwars.exercise.data.core.Resource
 import com.starwars.exercise.domain.model.Person
 import com.starwars.exercise.ui.components.ErrorState
 import com.starwars.exercise.ui.components.LoadingState
+import com.starwars.exercise.ui.theme.StarWarsTheme
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CompareResultScreen(
     firstId: Int,
@@ -57,13 +59,26 @@ fun CompareResultScreen(
         resultState.value = viewModel.compareCharacters(firstId, secondId)
     }
 
+    CompareResultContent(
+        resultState = resultState,
+        onBack = onBack
+    )
+
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun CompareResultContent(
+    resultState: MutableState<Resource<Pair<Person, Person>>>,
+    onBack: () -> Unit
+) {
     Scaffold(
         topBar = {
             TopAppBar(
                 title = { Text("Compare Result") },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Back")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
                     }
                 }
             )
@@ -180,6 +195,62 @@ fun CompareStatRow(label: String, firstValue: String, secondValue: String) {
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onBackground,
             fontWeight = FontWeight.Medium
+        )
+    }
+}
+
+private val fakePerson = Person(
+    id = 1,
+    name = "Luke Skywalker",
+    image = "",
+    birthYear = "19BBY",
+    gender = "male",
+    homeworld = "Tatooine",
+    species = "Human",
+    height = "172",
+    mass = "77",
+    hairColor = "blond",
+    skinColor = "fair",
+    eyeColor = "blue",
+    filmCount = 4,
+    starshipIds = listOf(12, 22)
+)
+
+private val fakePersonTwo = Person(
+    id = 4,
+    name = "Darth Vader",
+    image = "",
+    birthYear = "41.9BBY",
+    gender = "male",
+    homeworld = "Tatooine",
+    species = "Human",
+    height = "202",
+    mass = "136",
+    hairColor = "none",
+    skinColor = "white",
+    eyeColor = "yellow",
+    filmCount = 4,
+    starshipIds = listOf(13)
+)
+
+@Preview(showBackground = true, name = "Compare Result Light Mode")
+@Composable
+fun CompareResultScreenLightPreview() {
+    StarWarsTheme(darkTheme = false) {
+        CompareResultContent(
+            resultState = remember { mutableStateOf(Resource.Success(Pair(fakePerson, fakePersonTwo))) },
+            onBack = {}
+        )
+    }
+}
+
+@Preview(showBackground = true, name = "Compare Result Dark Mode")
+@Composable
+fun CompareResultScreenDarkPreview() {
+    StarWarsTheme(darkTheme = true) {
+        CompareResultContent(
+            resultState = remember { mutableStateOf(Resource.Success(Pair(fakePerson, fakePersonTwo))) },
+            onBack = {}
         )
     }
 }

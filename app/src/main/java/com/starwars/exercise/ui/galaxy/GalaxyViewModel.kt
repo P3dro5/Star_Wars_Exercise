@@ -2,7 +2,7 @@ package com.starwars.exercise.ui.galaxy
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.starwars.exercise.core.Resource
+import com.starwars.exercise.data.core.Resource
 import com.starwars.exercise.domain.model.Planet
 import com.starwars.exercise.domain.usecase.GetAllPlanetsUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel

@@ -1,6 +1,6 @@
 package com.starwars.exercise.data.mapper
 
-import com.starwars.exercise.config.GalaxyPositions
+import com.starwars.exercise.data.config.GalaxyPositions
 import com.starwars.exercise.data.api.dto.PersonDto
 import com.starwars.exercise.data.api.dto.PersonImageDto
 import com.starwars.exercise.data.api.dto.PlanetDto
@@ -45,24 +45,6 @@ internal fun PersonDto.toDomain(): Person {
     )
 }
 
-internal fun PersonDto.toEntity(): PersonEntity {
-    return PersonEntity(
-        id = url?.extractId() ?: 0,
-        name = name,
-        birthYear = birthYear?.takeIf { it.isNotBlank() && it.lowercase() != "unknown" } ?: "Unknown",
-        gender = gender?.takeIf { it.isNotBlank() && it.lowercase() != "unknown" } ?: "Unknown",
-        homeworld = homeworld ?: "",           // store the full URL
-        species = species.firstOrNull() ?: "", // store the full URL
-        height = height?.takeIf { it.isNotBlank() && it.lowercase() != "unknown" } ?: "Unknown",
-        mass = mass?.takeIf { it.isNotBlank() && it.lowercase() != "unknown" } ?: "Unknown",
-        hairColor = hairColor?.takeIf { it.isNotBlank() && it.lowercase() != "unknown" } ?: "Unknown",
-        skinColor = skinColor?.takeIf { it.isNotBlank() && it.lowercase() != "unknown" } ?: "Unknown",
-        eyeColor = eyeColor?.takeIf { it.isNotBlank() && it.lowercase() != "unknown" } ?: "Unknown",
-        filmCount = films.size,
-        starshipIds = starships.map { it.extractId() }.joinToString(",")
-    )
-}
-
 internal fun PersonEntity.toDomain(): Person {
     return Person(
         id = id,
@@ -103,20 +85,6 @@ internal fun PersonImageDto.toPersonImage(): PersonImage {
     )
 }
 
-internal fun StarshipDto.toEntity(): StarshipEntity {
-    return StarshipEntity(
-        id = url.extractId(),
-        name = name,
-        model = model,
-        manufacturer = manufacturer,
-        starshipClass = starshipClass,
-        crew = crew,
-        passengers = passengers,
-        costInCredits = costInCredits,
-        length = length
-    )
-}
-
 internal fun StarshipEntity.toDomain(): Starship {
     return Starship(
         id = id,
@@ -128,20 +96,6 @@ internal fun StarshipEntity.toDomain(): Starship {
         passengers = passengers,
         costInCredits = costInCredits,
         length = length
-    )
-}
-
-internal fun PlanetDto.toEntity(): PlanetEntity {
-    return PlanetEntity(
-        id = url.extractId(),
-        name = name,
-        climate = climate,
-        terrain = terrain,
-        population = population,
-        gravity = gravity,
-        diameter = diameter,
-        orbitalPeriod = orbitalPeriod,
-        rotationPeriod = rotationPeriod
     )
 }
 

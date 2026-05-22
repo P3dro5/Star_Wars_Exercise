@@ -1,4 +1,4 @@
-package com.starwars.exercise.di
+package com.starwars.exercise.data.di
 
 import com.starwars.exercise.domain.repository.StarWarsRepository
 import com.starwars.exercise.domain.usecase.CompareCharactersUseCase

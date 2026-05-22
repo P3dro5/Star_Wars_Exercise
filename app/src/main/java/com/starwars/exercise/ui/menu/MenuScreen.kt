@@ -20,10 +20,12 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.starwars.exercise.R
+import com.starwars.exercise.ui.theme.StarWarsTheme
 import com.starwars.exercise.ui.theme.ThemeMode
 import com.starwars.exercise.ui.theme.ThemeViewModel
 
@@ -35,6 +37,24 @@ fun MenuScreen(
     themeViewModel: ThemeViewModel = hiltViewModel()
 ) {
     val isDarkTheme by themeViewModel.isDarkTheme.collectAsStateWithLifecycle()
+
+    MenuScreenContent(
+        isDarkTheme = isDarkTheme,
+        onBack = onBack,
+        onCompare = onCompare,
+        onGalaxyMap = onGalaxyMap,
+        onThemeChanged = { themeViewModel.setTheme(it) }
+    )
+}
+
+@Composable
+private fun MenuScreenContent(
+    isDarkTheme: Boolean?,
+    onBack: () -> Unit,
+    onCompare: () -> Unit,
+    onGalaxyMap: () -> Unit,
+    onThemeChanged: (ThemeMode) -> Unit,
+) {
     val currentMode = when (isDarkTheme) {
         true -> ThemeMode.DARK
         false -> ThemeMode.LIGHT
@@ -71,7 +91,7 @@ fun MenuScreen(
                 ThemeMode.entries.forEach { mode ->
                     FilterChip(
                         selected = currentMode == mode,
-                        onClick = { themeViewModel.setTheme(mode) },
+                        onClick = { onThemeChanged.invoke(mode) },
                         label = {
                             Text(mode.name.lowercase().replaceFirstChar { it.uppercase() })
                         },
@@ -104,5 +124,33 @@ fun MenuScreen(
                 Text(text = "Back")
             }
         }
+    }
+}
+
+@Preview(showBackground = true, name = "Menu Screen - Dark")
+@Composable
+fun MenuScreenDarkPreview() {
+    StarWarsTheme(darkTheme = true) {
+        MenuScreenContent(
+            isDarkTheme = true,
+            onBack = {},
+            onCompare = {},
+            onGalaxyMap = {},
+            onThemeChanged = {}
+        )
+    }
+}
+
+@Preview(showBackground = true, name = "Menu Screen - Light")
+@Composable
+fun MenuScreenLightPreview() {
+    StarWarsTheme(darkTheme = false) {
+        MenuScreenContent(
+            isDarkTheme = false,
+            onBack = {},
+            onCompare = {},
+            onGalaxyMap = {},
+            onThemeChanged = {}
+        )
     }
 }

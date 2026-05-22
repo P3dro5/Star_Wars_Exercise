@@ -5,7 +5,7 @@ import androidx.lifecycle.viewModelScope
 import androidx.paging.PagingData
 import androidx.paging.cachedIn
 import androidx.paging.map
-import com.starwars.exercise.core.Resource
+import com.starwars.exercise.data.core.Resource
 import com.starwars.exercise.domain.model.Person
 import com.starwars.exercise.domain.model.PersonImage
 import com.starwars.exercise.domain.usecase.CompareCharactersUseCase
@@ -24,7 +24,6 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.combineTransform
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.launchIn
-import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
@@ -37,9 +36,6 @@ class CompareViewModel @Inject constructor(
     private val getAllCharactersUseCase: GetAllCharactersUseCase,
     private val getCharacterImagesUseCase: GetCharacterImagesUseCase,
 ) : ViewModel() {
-
-    private val _uiState = MutableStateFlow<CompareCharactersUiState>(CompareCharactersUiState.Loading)
-    val uiState: StateFlow<CompareCharactersUiState> = _uiState
 
     private val _selectedFirst = MutableStateFlow<Person?>(null)
     val selectedFirst: StateFlow<Person?> = _selectedFirst
@@ -68,8 +64,6 @@ class CompareViewModel @Inject constructor(
 
     private fun loadCharacters() {
         viewModelScope.launch {
-            _uiState.value = CompareCharactersUiState.Loading
-
             // load flat list for picker using suspend use case — no flow abort
             launch {
                 when (val result = getAllCharactersUseCase()) {
@@ -88,7 +82,7 @@ class CompareViewModel @Inject constructor(
 
             // paging flow for uiState unchanged
             getCharactersImageUseCase()
-                .combineTransform<Resource<List<PersonImage>>, PagingData<Person>, CompareCharactersUiState>(
+                .combineTransform(
                     getCharacterPagingUseCase().cachedIn(viewModelScope)
                 ) { images, characters ->
                     when (images) {
@@ -107,7 +101,6 @@ class CompareViewModel @Inject constructor(
                 }
                 .onStart { emit(CompareCharactersUiState.Loading) }
                 .catch { emit(CompareCharactersUiState.Error(it.localizedMessage ?: "Unknown error")) }
-                .onEach { _uiState.value = it }
                 .launchIn(viewModelScope)
         }
     }

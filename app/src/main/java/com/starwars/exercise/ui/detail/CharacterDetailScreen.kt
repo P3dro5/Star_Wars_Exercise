@@ -19,14 +19,16 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.starwars.exercise.domain.model.Person
 import com.starwars.exercise.ui.components.ErrorState
 import com.starwars.exercise.ui.components.LoadingState
 import com.starwars.exercise.ui.components.SectionHeader
+import com.starwars.exercise.ui.theme.StarWarsTheme
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CharacterDetailScreen(
     personId: Int,
@@ -40,12 +42,29 @@ fun CharacterDetailScreen(
         viewModel.loadDetail(personId)
     }
 
+    CharacterDetailContent(
+        uiState = uiState,
+        onBack = onBack,
+        onProfile = onProfile,
+        onRetry = { viewModel.loadDetail(personId) }
+    )
+
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun CharacterDetailContent(
+    uiState: DetailUiState,
+    onBack: () -> Unit,
+    onProfile: (Int) -> Unit,
+    onRetry: () -> Unit
+) {
     Scaffold(
         topBar = {
             TopAppBar(
                 title = {
                     if (uiState is DetailUiState.Success) {
-                        Text((uiState as DetailUiState.Success).person.name)
+                        Text(uiState.person.name)
                     }
                 },
                 navigationIcon = {
@@ -61,13 +80,13 @@ fun CharacterDetailScreen(
                 modifier = Modifier.fillMaxSize().padding(paddingValues)
             )
             is DetailUiState.Error -> ErrorState(
-                message = (uiState as DetailUiState.Error).message,
+                message = uiState.message,
                 actionLabel = "Retry",
-                onRetry = { viewModel.loadDetail(personId) },
+                onRetry = { onRetry.invoke() },
                 modifier = Modifier.fillMaxSize().padding(paddingValues)
             )
             is DetailUiState.Success -> {
-                val person = (uiState as DetailUiState.Success).person
+                val person = uiState.person
                 Column(
                     modifier = Modifier
                         .fillMaxSize()
@@ -92,5 +111,100 @@ fun CharacterDetailScreen(
                 }
             }
         }
+    }
+}
+
+private val fakePerson = Person(
+    id = 1,
+    name = "Luke Skywalker",
+    image = "",
+    birthYear = "19BBY",
+    gender = "male",
+    homeworld = "Tatooine",
+    species = "Human",
+    height = "172",
+    mass = "77",
+    hairColor = "blond",
+    skinColor = "fair",
+    eyeColor = "blue",
+    filmCount = 4,
+    starshipIds = listOf(12, 22)
+)
+
+@Preview(showBackground = true, name = "Detail Light Mode - Loading")
+@Composable
+fun CharacterDetailLoadingLightPreview() {
+    StarWarsTheme(darkTheme = false) {
+        CharacterDetailContent(
+            uiState = DetailUiState.Loading,
+            onBack = {},
+            onProfile = {},
+            onRetry = {}
+        )
+    }
+}
+
+@Preview(showBackground = true, name = "Detail Dark Mode - Loading")
+@Composable
+fun CharacterDetailLoadingDarkPreview() {
+    StarWarsTheme(darkTheme = true) {
+        CharacterDetailContent(
+            uiState = DetailUiState.Loading,
+            onBack = {},
+            onProfile = {},
+            onRetry = {}
+        )
+    }
+}
+
+@Preview(showBackground = true, name = "Detail Light Mode - Success")
+@Composable
+fun CharacterDetailSuccessLightPreview() {
+    StarWarsTheme(darkTheme = false) {
+        CharacterDetailContent(
+            uiState = DetailUiState.Success(fakePerson),
+            onBack = {},
+            onProfile = {},
+            onRetry = {}
+        )
+    }
+}
+
+@Preview(showBackground = true, name = "Detail Dark Mode - Success")
+@Composable
+fun CharacterDetailSuccessPreview() {
+    StarWarsTheme(darkTheme = true) {
+        CharacterDetailContent(
+            uiState = DetailUiState.Success(fakePerson),
+            onBack = {},
+            onProfile = {},
+            onRetry = {}
+        )
+    }
+}
+
+@Preview(showBackground = true, name = "Detail Light Mode - Error")
+@Composable
+fun CharacterDetailErrorLightPreview() {
+    StarWarsTheme(darkTheme = false) {
+        CharacterDetailContent(
+            uiState = DetailUiState.Error("Unable to load character"),
+            onBack = {},
+            onProfile = {},
+            onRetry = {}
+        )
+    }
+}
+
+@Preview(showBackground = true, name = "Detail - Error")
+@Composable
+fun CharacterDetailErrorDarkPreview() {
+    StarWarsTheme(darkTheme = true) {
+        CharacterDetailContent(
+            uiState = DetailUiState.Error("Unable to load character"),
+            onBack = {},
+            onProfile = {},
+            onRetry = {}
+        )
     }
 }

@@ -1,4 +1,4 @@
-package com.starwars.exercise.di
+package com.starwars.exercise.data.di
 
 import android.content.Context
 import androidx.room.Room

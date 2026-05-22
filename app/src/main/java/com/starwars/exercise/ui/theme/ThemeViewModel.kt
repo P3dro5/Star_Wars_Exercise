@@ -11,13 +11,13 @@ import androidx.core.content.edit
 
 @HiltViewModel
 class ThemeViewModel @Inject constructor(
-    private val application: Application
+    application: Application
 ) : ViewModel() {
 
     private val prefs = application.getSharedPreferences("settings", Context.MODE_PRIVATE)
 
     // null = follow OS, true = dark, false = light
-    private val _isDarkTheme = MutableStateFlow<Boolean?>(
+    private val _isDarkTheme = MutableStateFlow(
         when (prefs.getString("theme", "system")) {
             "dark" -> true
             "light" -> false

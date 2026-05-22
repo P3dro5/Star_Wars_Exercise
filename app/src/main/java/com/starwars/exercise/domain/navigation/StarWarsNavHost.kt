@@ -1,4 +1,4 @@
-package com.starwars.exercise.navigation
+package com.starwars.exercise.domain.navigation
 
 import androidx.compose.runtime.Composable
 import androidx.navigation.NavType
