@@ -6,6 +6,15 @@ import com.starwars.exercise.data.api.StarWarsImageApi
 import com.starwars.exercise.data.mapper.toCharacterAppearances
 import com.starwars.exercise.data.mapper.toDomain
 import com.starwars.exercise.data.mapper.toPersonImage
+import com.starwars.exercise.data.repository.StarWarsRepositoryImpl.ErrorMessage.LOAD_CHARACTERS_ERROR
+import com.starwars.exercise.data.repository.StarWarsRepositoryImpl.ErrorMessage.LOAD_CHARACTER_DETAIL_ERROR
+import com.starwars.exercise.data.repository.StarWarsRepositoryImpl.ErrorMessage.LOAD_IMAGES_ERROR
+import com.starwars.exercise.data.repository.StarWarsRepositoryImpl.ErrorMessage.LOAD_PLANETS_ERROR
+import com.starwars.exercise.data.repository.StarWarsRepositoryImpl.ErrorMessage.LOAD_PLANET_ERROR
+import com.starwars.exercise.data.repository.StarWarsRepositoryImpl.ErrorMessage.LOAD_SPECIES_ERROR
+import com.starwars.exercise.data.repository.StarWarsRepositoryImpl.ErrorMessage.LOAD_STARSHIPS_ERROR
+import com.starwars.exercise.data.repository.StarWarsRepositoryImpl.ErrorMessage.NETWORK_ERROR
+import com.starwars.exercise.data.repository.StarWarsRepositoryImpl.ErrorMessage.SEARCH_ERROR
 import com.starwars.exercise.domain.model.Person
 import com.starwars.exercise.domain.model.PersonImage
 import com.starwars.exercise.domain.model.Planet
@@ -16,6 +25,7 @@ import com.starwars.exercise.domain.repository.StarWarsRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.flow
+import java.io.IOException
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -25,6 +35,18 @@ class StarWarsRepositoryImpl @Inject constructor(
     private val imageApi: StarWarsImageApi,
 ) : StarWarsRepository {
 
+    object ErrorMessage {
+        const val NETWORK_ERROR = "Network Error. Please check your internet connection and try again."
+        const val LOAD_CHARACTERS_ERROR = "Unable to load characters"
+        const val LOAD_CHARACTER_DETAIL_ERROR = "Unable to load character details"
+        const val LOAD_IMAGES_ERROR = "Unable to load images"
+        const val LOAD_STARSHIPS_ERROR = "Unable to load starship details"
+        const val LOAD_PLANETS_ERROR = "Failed to load planets"
+        const val LOAD_PLANET_ERROR = "Failed to load planet"
+        const val LOAD_SPECIES_ERROR = "Failed to load species"
+        const val SEARCH_ERROR = "Search failed"
+    }
+
     override fun getCharacters(searchQuery: String?): Flow<Resource<List<Person>>> = flow {
         emit(Resource.Loading)
         try {
@@ -32,24 +54,30 @@ class StarWarsRepositoryImpl @Inject constructor(
             val filtered = if (searchQuery.isNullOrBlank()) all
             else all.filter { it.name.contains(searchQuery, ignoreCase = true) }
             emit(Resource.Success(filtered.map { it.toDomain() }))
+        }  catch(e: IOException) {
+            emit(Resource.Error(NETWORK_ERROR))
         } catch (e: Exception) {
-            emit(Resource.Error(e.localizedMessage ?: "Unable to load characters"))
+            emit(Resource.Error(LOAD_CHARACTERS_ERROR))
         }
-    }.catch { emit(Resource.Error(it.localizedMessage ?: "Unable to load characters")) }
+    }.catch { emit(Resource.Error(LOAD_CHARACTERS_ERROR)) }
 
     override suspend fun getCharacterDetail(personId: Int): Resource<Person> {
         return try {
             Resource.Success(api.getPerson(personId).toDomain())
+        }  catch(e: IOException) {
+            Resource.Error(NETWORK_ERROR)
         } catch (e: Exception) {
-            Resource.Error(e.localizedMessage ?: "Unable to load character details")
+            Resource.Error(LOAD_CHARACTER_DETAIL_ERROR)
         }
     }
 
     override suspend fun getAllCharacters(): Resource<List<Person>> {
         return try {
             Resource.Success(api.getPeople().map { it.toDomain() })
+        }  catch(e: IOException) {
+            Resource.Error(NETWORK_ERROR)
         } catch (e: Exception) {
-            Resource.Error(e.localizedMessage ?: "Failed to load characters")
+            Resource.Error(LOAD_CHARACTERS_ERROR)
         }
     }
 
@@ -57,13 +85,18 @@ class StarWarsRepositoryImpl @Inject constructor(
         emit(Resource.Loading)
         val response = imageApi.getCharacterImage()
         emit(Resource.Success(response.map { it.toPersonImage() }))
-    }.catch { emit(Resource.Error(it.localizedMessage ?: "Unable to load images")) }
+    }.catch { error ->
+        val message = if(error is IOException) "Network Error. Please check your internet connection and try again." else "Unable to load images"
+        emit(Resource.Error(message))
+    }
 
     override suspend fun getCharacterImages(): Resource<List<PersonImage>> {
         return try {
             Resource.Success(imageApi.getCharacterImage().map { it.toPersonImage() })
+        } catch(e: IOException) {
+            Resource.Error(NETWORK_ERROR)
         } catch (e: Exception) {
-            Resource.Error(e.localizedMessage ?: "Unable to load images")
+            Resource.Error(LOAD_IMAGES_ERROR)
         }
     }
 
@@ -73,37 +106,49 @@ class StarWarsRepositoryImpl @Inject constructor(
         val filtered = if (searchQuery.isNullOrBlank()) all
         else all.filter { it.name.contains(searchQuery, ignoreCase = true) }
         emit(Resource.Success(filtered.map { it.toDomain() }))
-    }.catch { emit(Resource.Error(it.localizedMessage ?: "Unable to load starships")) }
+    }.catch { error ->
+        val message = if(error is IOException) NETWORK_ERROR else "Unable to load starships"
+        emit(Resource.Error(message)) }
 
     override suspend fun getShipDetail(starshipId: Int): Resource<Starship> {
         return try {
             Resource.Success(api.getStarship(starshipId).toDomain())
+        } catch(e: IOException) {
+            Resource.Error(NETWORK_ERROR)
         } catch (e: Exception) {
-            Resource.Error(e.localizedMessage ?: "Unable to load starship details")
+            Resource.Error(LOAD_STARSHIPS_ERROR)
         }
     }
 
     override suspend fun getAllPlanets(): Resource<List<Planet>> {
         return try {
             Resource.Success(api.getPlanets().map { it.toDomain() })
-        } catch (e: Exception) {
-            Resource.Error(e.localizedMessage ?: "Failed to load planets")
+        } catch(e: IOException) {
+            Resource.Error(NETWORK_ERROR)
+        }
+        catch (e: Exception) {
+            Resource.Error(LOAD_PLANETS_ERROR)
         }
     }
 
     override suspend fun getPlanet(planetId: Int): Resource<Planet> {
         return try {
             Resource.Success(api.getPlanet(planetId).toDomain())
-        } catch (e: Exception) {
-            Resource.Error(e.localizedMessage ?: "Failed to load planet")
+        } catch(e: IOException) {
+            Resource.Error(NETWORK_ERROR)
+        }
+        catch (e: Exception) {
+            Resource.Error(LOAD_PLANET_ERROR)
         }
     }
 
     override suspend fun getAllSpecies(): Resource<List<Species>> {
         return try {
             Resource.Success(api.getSpecies().map { it.toDomain() })
+        } catch(e: IOException) {
+            Resource.Error(NETWORK_ERROR)
         } catch (e: Exception) {
-            Resource.Error(e.localizedMessage ?: "Failed to load species")
+            Resource.Error(LOAD_SPECIES_ERROR)
         }
     }
 
@@ -120,8 +165,10 @@ class StarWarsRepositoryImpl @Inject constructor(
                 }
             }
             Resource.Success(appearanceMap)
+        } catch(e: IOException) {
+            Resource.Error(NETWORK_ERROR)
         } catch (e: Exception) {
-            Resource.Error(e.localizedMessage ?: "Failed to load films")
+            Resource.Error(LOAD_CHARACTERS_ERROR)
         }
     }
 
@@ -177,8 +224,10 @@ class StarWarsRepositoryImpl @Inject constructor(
             planets.forEach { results.add(SearchResult.PlanetResult(it)) }
 
             Resource.Success(results)
+        }  catch(e: IOException) {
+            Resource.Error(NETWORK_ERROR)
         } catch (e: Exception) {
-            Resource.Error(e.localizedMessage ?: "Search failed")
+            Resource.Error(SEARCH_ERROR)
         }
     }
 }

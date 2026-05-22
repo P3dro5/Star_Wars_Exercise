@@ -28,7 +28,7 @@ fun OnboardingTwoScreen(onNext: () -> Unit) {
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 Text(
-                    text = "Track your favorite heroes",
+                    text = "Track your favorite characters",
                     style = MaterialTheme.typography.headlineMedium,
                     color = MaterialTheme.colorScheme.onBackground
                 )

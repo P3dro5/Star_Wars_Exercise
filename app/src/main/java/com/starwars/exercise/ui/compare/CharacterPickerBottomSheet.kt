@@ -19,6 +19,7 @@ import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -39,15 +40,18 @@ import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import com.starwars.exercise.R
 import com.starwars.exercise.domain.model.Person
+import com.starwars.exercise.ui.components.ErrorState
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CharacterPickerSheet(
     searchQuery: String,
     characters: List<Person>,
+    pickerUiState: PickerUiState,
     onSearchChanged: (String) -> Unit,
     onCharacterPicked: (Person) -> Unit,
-    onDismiss: () -> Unit
+    onDismiss: () -> Unit,
+    onRetry: () -> Unit
 ) {
     ModalBottomSheet(
         onDismissRequest = onDismiss,
@@ -75,78 +79,96 @@ fun CharacterPickerSheet(
                 }
             }
 
-            // search field
             OutlinedTextField(
-                value = searchQuery,
-                onValueChange = onSearchChanged,
-                placeholder = { Text("Search characters...") },
-                leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
-                trailingIcon = {
-                    if (searchQuery.isNotBlank()) {
-                        IconButton(onClick = { onSearchChanged("") }) {
-                            Icon(Icons.Default.Clear, contentDescription = "Clear")
+                    value = searchQuery,
+                    onValueChange = onSearchChanged,
+                    placeholder = { Text("Search characters...") },
+                    leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
+                    trailingIcon = {
+                        if (searchQuery.isNotBlank()) {
+                            IconButton(onClick = { onSearchChanged("") }) {
+                                Icon(Icons.Default.Clear, contentDescription = "Clear")
+                            }
                         }
-                    }
-                },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 8.dp),
-                singleLine = true,
-                shape = RoundedCornerShape(12.dp)
-            )
+                    },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 8.dp),
+                    singleLine = true,
+                    shape = RoundedCornerShape(12.dp)
+                )
 
             HorizontalDivider()
 
-            // character list
-            if (characters.isEmpty() && searchQuery.isNotBlank()) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(32.dp),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        text = "No characters found",
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+            when (pickerUiState) {
+                is PickerUiState.Loading -> {
+                    Box(
+                        modifier = Modifier.fillMaxSize(),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        CircularProgressIndicator()
+                    }
+                }
+                is PickerUiState.Error -> {
+                    ErrorState(
+                        message = pickerUiState.message,
+                        actionLabel = "Retry",
+                        onRetry = onRetry,
+                        modifier = Modifier.fillMaxSize()
                     )
                 }
-            } else {
-                LazyColumn(modifier = Modifier.fillMaxSize()) {
-                    items(characters, key = { it.id }) { person ->
-                        Row(
+                is PickerUiState.Success -> {
+                    if (characters.isEmpty() && searchQuery.isNotBlank()) {
+                        Box(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .clickable { onCharacterPicked(person) }
-                                .padding(horizontal = 16.dp, vertical = 12.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(16.dp)
+                                .padding(32.dp),
+                            contentAlignment = Alignment.Center
                         ) {
-                            AsyncImage(
-                                model = person.image,
-                                contentDescription = person.name,
-                                placeholder = painterResource(R.drawable.darth_vader),
-                                error = painterResource(R.drawable.darth_vader),
-                                modifier = Modifier
-                                    .size(48.dp)
-                                    .clip(CircleShape),
-                                contentScale = ContentScale.Crop
-                            )
                             Text(
-                                text = person.name,
-                                style = MaterialTheme.typography.bodyLarge,
-                                fontWeight = FontWeight.Medium,
-                                modifier = Modifier.weight(1f)
-                            )
-                            Icon(
-                                imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
-                                contentDescription = null,
-                                tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                text = "No characters found",
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
-                        HorizontalDivider(
-                            modifier = Modifier.padding(horizontal = 16.dp),
-                            color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.08f)
-                        )
+                    } else {
+                        LazyColumn(modifier = Modifier.fillMaxSize()) {
+                            items(characters, key = { it.id }) { person ->
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .clickable { onCharacterPicked(person) }
+                                        .padding(horizontal = 16.dp, vertical = 12.dp),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(16.dp)
+                                ) {
+                                    AsyncImage(
+                                        model = person.image,
+                                        contentDescription = person.name,
+                                        placeholder = painterResource(R.drawable.darth_vader),
+                                        error = painterResource(R.drawable.darth_vader),
+                                        modifier = Modifier
+                                            .size(48.dp)
+                                            .clip(CircleShape),
+                                        contentScale = ContentScale.Crop
+                                    )
+                                    Text(
+                                        text = person.name,
+                                        style = MaterialTheme.typography.bodyLarge,
+                                        fontWeight = FontWeight.Medium,
+                                        modifier = Modifier.weight(1f)
+                                    )
+                                    Icon(
+                                        imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                                        contentDescription = null,
+                                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
+                                HorizontalDivider(
+                                    modifier = Modifier.padding(horizontal = 16.dp),
+                                    color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.08f)
+                                )
+                            }
+                        }
                     }
                 }
             }

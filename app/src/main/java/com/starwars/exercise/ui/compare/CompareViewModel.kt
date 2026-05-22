@@ -43,15 +43,17 @@ class CompareViewModel @Inject constructor(
     private val _selectedSecond = MutableStateFlow<Person?>(null)
     val selectedSecond: StateFlow<Person?> = _selectedSecond
 
-    // which slot is currently being selected (1 or 2), null = not selecting
     private val _selectingSlot = MutableStateFlow<Int?>(null)
     val selectingSlot: StateFlow<Int?> = _selectingSlot
 
-    // search query for character picker
     private val _searchQuery = MutableStateFlow("")
     val searchQuery: StateFlow<String> = _searchQuery
 
     private val _allCharacters = MutableStateFlow<List<Person>>(emptyList())
+
+    // separate state for picker list loading
+    private val _pickerUiState = MutableStateFlow<PickerUiState>(PickerUiState.Loading)
+    val pickerUiState: StateFlow<PickerUiState> = _pickerUiState
 
     val filteredCharacters: StateFlow<List<Person>> = combine(
         _searchQuery, _allCharacters
@@ -62,25 +64,29 @@ class CompareViewModel @Inject constructor(
 
     init { loadCharacters() }
 
-    private fun loadCharacters() {
+    fun loadCharacters() {
         viewModelScope.launch {
-            // load flat list for picker using suspend use case — no flow abort
-            launch {
+            // picker list
+                _pickerUiState.value = PickerUiState.Loading
                 when (val result = getAllCharactersUseCase()) {
                     is Resource.Success -> {
                         val imageMap: Map<String, PersonImage> = when (val images = getCharacterImagesUseCase()) {
                             is Resource.Success -> images.data.associateBy { it.id }
                             else -> emptyMap()
                         }
-                        _allCharacters.value = result.data.map { person ->
+                        val characters = result.data.map { person ->
                             person.copy(image = imageMap[person.id.toString()]?.image ?: "")
                         }.sortedBy { it.name }
+                        _allCharacters.value = characters
+                        _pickerUiState.value = PickerUiState.Success
+                    }
+                    is Resource.Error -> {
+                        _pickerUiState.value = PickerUiState.Error(result.message)
                     }
                     else -> {}
                 }
-            }
 
-            // paging flow for uiState unchanged
+            // paging flow
             getCharactersImageUseCase()
                 .combineTransform(
                     getCharacterPagingUseCase().cachedIn(viewModelScope)
@@ -100,7 +106,9 @@ class CompareViewModel @Inject constructor(
                     }
                 }
                 .onStart { emit(CompareCharactersUiState.Loading) }
-                .catch { emit(CompareCharactersUiState.Error(it.localizedMessage ?: "Unknown error")) }
+                .catch { error ->
+                    emit(CompareCharactersUiState.Error(error.message ?: "Error"))
+                }
                 .launchIn(viewModelScope)
         }
     }
@@ -115,9 +123,7 @@ class CompareViewModel @Inject constructor(
         _searchQuery.value = ""
     }
 
-    fun onSearchQueryChanged(query: String) {
-        _searchQuery.value = query
-    }
+    fun onSearchQueryChanged(query: String) { _searchQuery.value = query }
 
     fun onCharacterPicked(person: Person) {
         when (_selectingSlot.value) {
@@ -139,4 +145,10 @@ sealed class CompareCharactersUiState {
     data object Loading : CompareCharactersUiState()
     data class Success(val characters: Flow<PagingData<Person>>) : CompareCharactersUiState()
     data class Error(val message: String) : CompareCharactersUiState()
+}
+
+sealed class PickerUiState {
+    data object Loading : PickerUiState()
+    data object Success : PickerUiState()
+    data class Error(val message: String) : PickerUiState()
 }
