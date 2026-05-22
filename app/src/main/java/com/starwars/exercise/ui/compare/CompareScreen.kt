@@ -127,14 +127,14 @@ fun CompareScreenContent(
             ) {
                 CharacterSlotCard(
                     person = selectedFirst,
-                    label = "Hero 1",
+                    label = "Character 1",
                     onTap = { onSlotTapped.invoke(1) },
                     onClear = { onClearFirst.invoke() },
                     modifier = Modifier.weight(1f)
                 )
                 CharacterSlotCard(
                     person = selectedSecond,
-                    label = "Hero 2",
+                    label = "Character 2",
                     onTap = { onSlotTapped.invoke(2) },
                     onClear = { onClearSecond.invoke() },
                     modifier = Modifier.weight(1f)
@@ -212,7 +212,7 @@ fun CharacterSlotCard(
                     ) {
                         Icon(
                             imageVector = Icons.Default.Add,
-                            contentDescription = "Add hero",
+                            contentDescription = "Add Character",
                             modifier = Modifier.size(32.dp),
                             tint = MaterialTheme.colorScheme.primary
                         )
@@ -357,7 +357,7 @@ fun CompareScreenBothSelectedPreview() {
 fun CharacterSlotCardPreview() {
     CharacterSlotCard(
         person = fakePerson,
-        label = "Hero 1",
+        label = "Character 1",
         onTap = {},
         onClear = {}
     )
@@ -368,7 +368,7 @@ fun CharacterSlotCardPreview() {
 fun CharacterSlotCardEmptyPreview() {
     CharacterSlotCard(
         person = null,
-        label = "Hero 1",
+        label = "Character 1",
         onTap = {},
         onClear = {}
     )

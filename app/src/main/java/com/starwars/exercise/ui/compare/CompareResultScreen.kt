@@ -107,20 +107,20 @@ fun CompareResultContent(
                         .padding(16.dp),
                     verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
-                    // hero portraits
+                    // Character portraits
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceEvenly,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        HeroPortrait(person = first)
+                        CharacterPortrait(person = first)
                         Text(
                             text = "VS",
                             style = MaterialTheme.typography.headlineMedium,
                             color = MaterialTheme.colorScheme.primary,
                             fontWeight = FontWeight.Bold
                         )
-                        HeroPortrait(person = second)
+                        CharacterPortrait(person = second)
                     }
 
                     HorizontalDivider()
@@ -142,7 +142,7 @@ fun CompareResultContent(
 }
 
 @Composable
-fun HeroPortrait(person: Person) {
+fun CharacterPortrait(person: Person) {
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(8.dp)

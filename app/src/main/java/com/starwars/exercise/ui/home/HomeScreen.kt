@@ -134,7 +134,7 @@ fun HomeScreen(
         onFilterSelected = {
             showFilterSheet = true
         },
-        onRetryCharacters = { viewModel.loadCharacters() },
+        onRetryCharacters = { viewModel.loadInformation() },
         onGalaxyMap = { onGalaxyMap.invoke() },
         onCompareCharacters = { onCompareCharacters.invoke() }
 

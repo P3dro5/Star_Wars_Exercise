@@ -23,7 +23,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.catch
-import kotlinx.coroutines.flow.combineTransform
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.launchIn
@@ -32,6 +32,7 @@ import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import java.io.IOException
 
 @OptIn(FlowPreview::class)
 @HiltViewModel
@@ -65,8 +66,11 @@ class HomeViewModel @Inject constructor(
     private val _firstAppearanceMap = MutableStateFlow<Map<Int, Int>>(emptyMap())
 
     init {
-        viewModelScope.launch {
+        loadInformation()
+    }
 
+    fun loadInformation() {
+        viewModelScope.launch {
             // debounce search by 400ms
             _searchQuery
                 .debounce(400)
@@ -79,8 +83,16 @@ class HomeViewModel @Inject constructor(
                 }
         }
         viewModelScope.launch {
-            loadFilmData()
-            loadCharacters()
+            try {
+                loadFilmData()
+                loadCharacters()
+            }
+            catch (e: IOException) {
+                _uiState.value = HomeUiState.Error(e.localizedMessage ?: "Unknown error")
+            }
+            catch (e: Exception) {
+                _uiState.value = HomeUiState.Error(e.localizedMessage ?: "Unknown error")
+            }
         }
         loadSpecies()
     }
@@ -111,35 +123,51 @@ class HomeViewModel @Inject constructor(
     fun loadCharacters() {
         val currentFilter = _filter.value
         val searchQuery = _searchQuery.value.ifBlank { null }
+
         val filteredIds = currentFilter.selectedSpecies
-            .flatMap { it.peopleIds }.distinct().ifEmpty { null }
+            .flatMap { it.peopleIds }
+            .distinct()
+            .ifEmpty { null }
+
         val selectedGenders = currentFilter.selectedGenders.ifEmpty { null }
 
-        getCharactersImageUseCase().combineTransform(
+        getCharactersImageUseCase().combine(
             getCharacterPagingUseCase(
                 searchQuery = searchQuery,
                 filteredIds = filteredIds,
                 selectedGenders = selectedGenders,
                 sortField = currentFilter.sortField,
                 sortOrder = currentFilter.sortOrder,
-                firstAppearanceMap = _firstAppearanceMap.value  // always up to date
+                firstAppearanceMap = _firstAppearanceMap.value
             ).cachedIn(viewModelScope)
         ) { images, characters ->
+
             when (images) {
-                is Resource.Loading -> _uiState.value = HomeUiState.Loading
+                is Resource.Loading -> {
+                    _uiState.value = HomeUiState.Loading
+                }
                 is Resource.Success -> {
                     val imageMap = images.data.associateBy { it.id }
                     val pagingValue = characters.map { post ->
-                        // getValue crashes if id missing, getOrDefault returns empty string
-                        post.copy(image = imageMap.getOrDefault(post.id.toString(), null)?.image ?: "")
+                        post.copy(
+                            image = imageMap[post.id.toString()]?.image ?: ""
+                        )
                     }
                     _uiState.value = HomeUiState.Success(flowOf(pagingValue))
                 }
-                is Resource.Error -> emit(HomeUiState.Error(images.message))
+
+                is Resource.Error -> {
+                    _uiState.value = HomeUiState.Error(images.message)
+                }
             }
         }
-            .onStart { _uiState.value = HomeUiState.Loading }
-            .catch { _uiState.value = HomeUiState.Error(it.localizedMessage ?: "Unknown error") }
+            .onStart {
+                _uiState.value = HomeUiState.Loading
+            }
+            .catch {
+                _uiState.value =
+                    HomeUiState.Error(it.localizedMessage ?: "Unknown error")
+            }
             .launchIn(viewModelScope)
     }
 

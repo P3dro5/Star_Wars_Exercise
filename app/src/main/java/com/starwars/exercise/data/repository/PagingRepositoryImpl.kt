@@ -15,6 +15,7 @@ import com.starwars.exercise.ui.paging.LocalListPagingSource
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.emitAll
 import kotlinx.coroutines.flow.flow
+import java.io.IOException
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -28,14 +29,24 @@ class PagingRepositoryImpl @Inject constructor(
     private var cachedAllPeople: List<PersonDto>? = null
 
     private suspend fun getValidIds(): Set<Int> {
-        return cachedValidIds ?: imageApi.getCharacterImage()
-            .map { it.id.toIntOrNull() ?: 1 }
-            .toSet()
-            .also { cachedValidIds = it }
+        return try {
+            cachedValidIds ?: imageApi.getCharacterImage()
+                .mapNotNull { it.id.toIntOrNull() }
+                .toSet()
+                .also { cachedValidIds = it }
+        } catch (e: Exception) {
+            emptySet()
+        }
     }
 
     private suspend fun getAllPeople(): List<PersonDto> {
-        return cachedAllPeople ?: api.getPeople().also { cachedAllPeople = it }
+        return try {
+            cachedAllPeople ?: api.getPeople().also {
+                cachedAllPeople = it
+            }
+        } catch (e: Exception) {
+            emptyList()
+        }
     }
 
     override fun getPagingCharacters(
@@ -46,53 +57,46 @@ class PagingRepositoryImpl @Inject constructor(
         sortOrder: SortOrder,
         firstAppearanceMap: Map<Int, Int>
     ): Flow<PagingData<Person>> = flow {
-        val validIds = getValidIds()
-        val allPeople = getAllPeople()
 
-        // apply search, filter, gender locally
-        var people = allPeople.map { it.toDomain() }
+        try {
+            val validIds = getValidIds()
+            val allPeople = getAllPeople()
 
-        if (!searchQuery.isNullOrBlank()) {
-            people = people.filter { it.name.contains(searchQuery, ignoreCase = true) }
-        }
-        if (!filteredIds.isNullOrEmpty()) {
-            people = people.filter { it.id in filteredIds }
-        }
-        if (!selectedGenders.isNullOrEmpty()) {
-            people = people.filter { it.gender in selectedGenders }
-        }
+            var people = allPeople.map { it.toDomain() }
 
-        people = people.filter { it.id in validIds }
-
-        // apply sorting
-        people = when (sortField) {
-            SortField.NAME -> if (sortOrder == SortOrder.ASCENDING)
-                people.sortedWith(compareBy({ it.name.lowercase() }, { it.id }))
-            else
-                people.sortedWith(compareByDescending<Person> { it.name.lowercase() }.thenByDescending { it.id })
-            SortField.YEAR -> if (sortOrder == SortOrder.ASCENDING)
-                people.sortedWith(compareBy(
-                    { firstAppearanceMap.getOrDefault(it.id, Int.MAX_VALUE) }, { it.id }
-                ))
-            else
-                people.sortedWith(
-                    compareByDescending<Person> { firstAppearanceMap.getOrDefault(it.id, Int.MAX_VALUE) }
-                        .thenByDescending { it.id }
-                )
-            SortField.NONE -> people
-        }
-
-        emitAll(
-            Pager(
-                config = PagingConfig(
-                    pageSize = 10,
-                    prefetchDistance = 2,
-                    initialLoadSize = 10
-                ),
-                pagingSourceFactory = {
-                    LocalListPagingSource(people)
+            if (!searchQuery.isNullOrBlank()) {
+                people = people.filter {
+                    it.name.contains(searchQuery, ignoreCase = true)
                 }
-            ).flow
-        )
+            }
+
+            if (!filteredIds.isNullOrEmpty()) {
+                people = people.filter { it.id in filteredIds }
+            }
+
+            if (!selectedGenders.isNullOrEmpty()) {
+                people = people.filter { it.gender in selectedGenders }
+            }
+
+            people = people.filter { it.id in validIds }
+
+            emitAll(
+                Pager(
+                    config = PagingConfig(
+                        pageSize = 10,
+                        prefetchDistance = 2,
+                        initialLoadSize = 10
+                    ),
+                    pagingSourceFactory = {
+                        LocalListPagingSource(people)
+                    }
+                ).flow
+            )
+
+        } catch (e: IOException) {
+            emit(PagingData.empty())
+        } catch (e: Exception) {
+            emit(PagingData.empty())
+        }
     }
 }

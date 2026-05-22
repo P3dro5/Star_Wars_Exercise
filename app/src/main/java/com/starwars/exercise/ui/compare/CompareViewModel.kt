@@ -27,6 +27,7 @@ import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import java.io.IOException
 
 @HiltViewModel
 class CompareViewModel @Inject constructor(
@@ -65,8 +66,7 @@ class CompareViewModel @Inject constructor(
     private fun loadCharacters() {
         viewModelScope.launch {
             // load flat list for picker using suspend use case — no flow abort
-            launch {
-                when (val result = getAllCharactersUseCase()) {
+            when (val result = getAllCharactersUseCase()) {
                     is Resource.Success -> {
                         val imageMap: Map<String, PersonImage> = when (val images = getCharacterImagesUseCase()) {
                             is Resource.Success -> images.data.associateBy { it.id }
@@ -77,8 +77,8 @@ class CompareViewModel @Inject constructor(
                         }.sortedBy { it.name }
                     }
                     else -> {}
-                }
             }
+
 
             // paging flow for uiState unchanged
             getCharactersImageUseCase()
@@ -100,7 +100,10 @@ class CompareViewModel @Inject constructor(
                     }
                 }
                 .onStart { emit(CompareCharactersUiState.Loading) }
-                .catch { emit(CompareCharactersUiState.Error(it.localizedMessage ?: "Unknown error")) }
+                .catch { error ->
+                    val message = if(error is IOException) "Network error. Please check your internet connection and try again." else "An error as occured."
+                    emit(CompareCharactersUiState.Error("An error has occurred."))
+                }
                 .launchIn(viewModelScope)
         }
     }
